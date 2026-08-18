@@ -1,10 +1,35 @@
 import 'dart:convert';
+import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-  // Live Render backend base endpoint
-  static const String baseUrl = 'https://raksha-api-71a6.onrender.com';
+  // ── ENVIRONMENT CONFIGURATION ──────────────────────────────────────────────
+  // Set to true for local simulation (Port 8000 FastAPI -> Port 8001 ML Engine)
+  // Set to false for live production Render backend
+  static const bool useLocalServer = true;
+
+  // Render Production Base URL
+  static const String _productionUrl = 'https://raksha-api-71a6.onrender.com';
+
+  /// Dynamically resolves the Base URL depending on environment:
+  /// - Web / Desktop / Local: http://127.0.0.1:8000
+  /// - Android Emulator: http://10.0.2.2:8000
+  static String get baseUrl {
+    if (!useLocalServer) return _productionUrl;
+
+    if (kIsWeb) {
+      return 'http://127.0.0.1:8000';
+    }
+
+    try {
+      if (Platform.isAndroid) {
+        return 'http://10.0.2.2:8000'; // Android Emulator alias for host localhost
+      }
+    } catch (_) {}
+
+    return 'http://127.0.0.1:8000';
+  }
 
   /// Pushes both Vitals (/vitals) and Triage (/triage) payloads to backend.
   /// Includes robust error catching and detailed logging for debugging.
@@ -13,7 +38,7 @@ class ApiService {
     bool triageSuccess = false;
 
     debugPrint("════════════════════════════════════════════════════");
-    debugPrint("🌐 STARTING CLOUD SYNC TO: $baseUrl");
+    debugPrint("🌐 STARTING CLOUD SYNC TO: $baseUrl (LocalServer: $useLocalServer)");
 
     // Extract or construct vitals and triage payloads
     final Map<String, dynamic> vitalsPayload =
