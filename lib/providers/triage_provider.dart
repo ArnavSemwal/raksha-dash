@@ -143,6 +143,19 @@ class TriageProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setGender(String? gender) {
+    if (gender == null || gender.isEmpty) return;
+    _patientInfo = PatientInfo(
+      id: _patientInfo.id,
+      name: _patientInfo.name,
+      age: _patientInfo.age,
+      gender: gender,
+      phone: _patientInfo.phone,
+      village: _patientInfo.village,
+    );
+    notifyListeners();
+  }
+
   // ── Step States ──────────────────────────────────────────────────────────
 
   ScanStatus _stethStatus = ScanStatus.initial;

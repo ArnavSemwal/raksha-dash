@@ -33,6 +33,12 @@ class TriageMaster extends StatelessWidget {
         RakshaPatientRegistrationScreen(
           patientId: provider.patientInfo.id,
           progressFraction: 0.125,
+          selectedGender: provider.patientInfo.gender.isEmpty
+              ? null
+              : provider.patientInfo.gender,
+          onGenderChanged: (gender) {
+            provider.setGender(gender);
+          },
 
           // Jab user "Proceed to Vitals" dabaye, tab next page par jaye
           onProceedPressed: () {
