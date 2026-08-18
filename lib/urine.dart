@@ -13,6 +13,7 @@ class RakshaUrineAnalysisScreen extends StatelessWidget {
   final VoidCallback? onFinishPressed;
   final VoidCallback? onStartScanPressed;
   final VoidCallback? onRetakePressed;
+  final String? illustrationUrl;
 
   const RakshaUrineAnalysisScreen({
     super.key,
@@ -23,6 +24,7 @@ class RakshaUrineAnalysisScreen extends StatelessWidget {
     this.onFinishPressed,
     this.onStartScanPressed,
     this.onRetakePressed,
+    this.illustrationUrl,
   });
 
   static const Color primaryBlue = Color(0xFF2563EB);
@@ -166,6 +168,8 @@ class RakshaUrineAnalysisScreen extends StatelessWidget {
   }
 
   Widget _buildIllustrationCard() {
+    final String assetPath = illustrationUrl ?? 'assets/images/urine.png';
+
     return Container(
       width: double.infinity,
       constraints: const BoxConstraints(maxHeight: 220),
@@ -177,9 +181,15 @@ class RakshaUrineAnalysisScreen extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12.0),
-        child: CustomPaint(
-          size: const Size(double.infinity, 180),
-          painter: _TestStripPainter(),
+        child: Image.asset(
+          assetPath,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) {
+            return CustomPaint(
+              size: const Size(double.infinity, 180),
+              painter: _TestStripPainter(),
+            );
+          },
         ),
       ),
     );

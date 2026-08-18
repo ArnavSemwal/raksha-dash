@@ -172,6 +172,8 @@ class RakshaSpo2TempScreen extends StatelessWidget {
   }
 
   Widget _buildIllustrationCard() {
+    final String assetPath = illustrationUrl ?? 'assets/images/spo2_temp.png';
+
     return Container(
       width: double.infinity,
       constraints: const BoxConstraints(maxHeight: 220),
@@ -183,9 +185,15 @@ class RakshaSpo2TempScreen extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12.0),
-        child: CustomPaint(
-          size: const Size(double.infinity, 180),
-          painter: _OximeterThermometerPainter(),
+        child: Image.asset(
+          assetPath,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) {
+            return CustomPaint(
+              size: const Size(double.infinity, 180),
+              painter: _OximeterThermometerPainter(),
+            );
+          },
         ),
       ),
     );

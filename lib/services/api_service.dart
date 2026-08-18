@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 class ApiService {
   // Anushka jab actual Render URL degi, toh bas ye link change karna padega
   static const String baseUrl =
-      'https://raksha-backend-mock.onrender.com/api/v1/triage';
+      'https://raksha-api-71a6.onrender.com/api/v1/triage';
 
   static Future<bool> pushTriageData(Map<String, dynamic> payload) async {
     try {

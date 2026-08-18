@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// Production-ready, pixel-perfect StatelessWidget for the Raksha Triage Home / Base Screen.
-///
 /// Converts the HTML/Tailwind layout completely into a single stateless Flutter Widget.
 class RakshaTriageHomeScreen extends StatelessWidget {
   /// Callback when the "Start New Patient Check" primary button is tapped

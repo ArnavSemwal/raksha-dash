@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// Production-ready, pixel-perfect StatelessWidget for the Raksha New Patient Registration Screen.
-///
 /// Converts the HTML/Tailwind layout completely into a single stateless Flutter Widget.
 class RakshaPatientRegistrationScreen extends StatelessWidget {
   /// System generated patient ID string
