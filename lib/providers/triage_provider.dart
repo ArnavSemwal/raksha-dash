@@ -345,40 +345,50 @@ class TriageProvider extends ChangeNotifier {
   // JSON PAYLOAD GENERATOR (For API Sync)
   // ════════════════════════════════════════════════════════════════════════
 
+  List<double> _getUrineRgb(String? color) {
+    switch (color?.toLowerCase()) {
+      case 'red':
+        return [255.0, 0.0, 0.0];
+      case 'dark brown':
+        return [101.0, 67.0, 33.0];
+      case 'amber':
+        return [255.0, 191.0, 0.0];
+      case 'pale yellow':
+        return [255.0, 255.0, 224.0];
+      default:
+        return [255.0, 255.0, 0.0];
+    }
+  }
+
+  Map<String, dynamic> generateVitalsJsonPayload() {
+    return {
+      "patient_id": _patientInfo.id.isEmpty ? "PT-0001" : _patientInfo.id,
+      "timestamp": DateTime.now().toIso8601String(),
+      "stethoscope_status": _stethStatus.name,
+      "ecg_hr": (_ecgResult?.heartRate ?? _stethResult?.heartRate ?? 72.0).toDouble(),
+      "bp_sys": (_bpResult?.systolic ?? 120).toDouble(),
+      "bp_dia": (_bpResult?.diastolic ?? 80).toDouble(),
+      "spo2": (_spo2TempResult?.spo2 ?? 98).toDouble(),
+      "temperature": (_spo2TempResult?.temperature ?? 36.8).toDouble(),
+      "urine_rgb": _getUrineRgb(_urineResult?.color),
+      "patient_speech_text":
+          "Auscultation: ${_stethResult?.lungSound ?? 'Clear'}. ECG Rhythm: ${_ecgResult?.rhythm ?? 'Normal Sinus'}.",
+    };
+  }
+
+  Map<String, dynamic> generateTriageJsonPayload() {
+    return {
+      "patient_id": _patientInfo.id.isEmpty ? "PT-0001" : _patientInfo.id,
+      "timestamp": DateTime.now().toIso8601String(),
+      "triage": hasAnyAbnormal ? "RED" : "GREEN",
+      "confidence": hasAnyAbnormal ? 0.88 : 0.96,
+    };
+  }
+
   Map<String, dynamic> generateJsonPayload() {
     return {
-      "patient_id": _patientInfo.id,
-      "timestamp": DateTime.now().toIso8601String(),
-      "overall_status": hasAnyAbnormal ? "RED" : "GREEN",
-      "vitals": {
-        "stethoscope": {
-          "heart_rate": _stethResult?.heartRate,
-          "lung_sound": _stethResult?.lungSound,
-          "status": _stethStatus.name, // "initial", "clean" or "abnormal"
-        },
-        "ecg": {
-          "heart_rate": _ecgResult?.heartRate,
-          "rhythm": _ecgResult?.rhythm,
-          "qt_interval": _ecgResult?.qtInterval,
-          "status": _ecgStatus.name,
-        },
-        "blood_pressure": {
-          "systolic": _bpResult?.systolic,
-          "diastolic": _bpResult?.diastolic,
-          "pulse": _bpResult?.pulseRate,
-          "status": _bpStatus.name,
-        },
-        "spo2_temp": {
-          "spo2": _spo2TempResult?.spo2,
-          "temperature": _spo2TempResult?.temperature,
-          "status": _spo2TempStatus.name,
-        },
-        "urine": {
-          "color": _urineResult?.color,
-          "ph": _urineResult?.ph,
-          "status": _urineStatus.name,
-        },
-      },
+      "vitals": generateVitalsJsonPayload(),
+      "triage": generateTriageJsonPayload(),
     };
   }
 
