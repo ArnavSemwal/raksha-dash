@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
 
 // ──────────────────────────────────────────────────────────────────────────────
 // ENUMS
@@ -379,6 +380,12 @@ class TriageProvider extends ChangeNotifier {
         },
       },
     };
+  }
+
+  /// Sends triage data to cloud API. Returns true on success.
+  Future<bool> syncDataToCloud() async {
+    final payload = generateJsonPayload();
+    return await ApiService.pushTriageData(payload);
   }
 
   void goToNextStep() {

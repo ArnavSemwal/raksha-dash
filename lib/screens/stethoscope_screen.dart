@@ -1,16 +1,9 @@
 import 'package:flutter/material.dart';
+import '../providers/triage_provider.dart' show ScanStatus;
 
-/// Represents the status state of the Stethoscope scan step.
-enum StethoscopeScanStatus {
-  /// Initial state before recording (Action: "Start 10s Recording")
-  initial,
-
-  /// Scan completed with no issues detected (Green banner)
-  clean,
-
-  /// Scan completed with abnormal readings detected (Red warning banner)
-  abnormal,
-}
+/// Alias so all existing references to StethoscopeScanStatus.initial/clean/abnormal
+/// continue to compile unchanged — zero widget code modified.
+typedef StethoscopeScanStatus = ScanStatus;
 
 /// A pixel-perfect, production-ready StatelessWidget for the Raksha Stethoscope Capture UI.
 ///

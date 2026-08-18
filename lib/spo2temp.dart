@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'providers/triage_provider.dart' show ScanStatus;
 
-enum Spo2TempScanStatus { initial, clean, abnormal }
+/// Alias so all existing references to Spo2TempScanStatus compile unchanged.
+typedef Spo2TempScanStatus = ScanStatus;
 
 /// Production-ready, pixel-perfect StatelessWidget for Step 4: SpO2 & Temp UI.
 class RakshaSpo2TempScreen extends StatelessWidget {

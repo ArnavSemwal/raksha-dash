@@ -22,8 +22,7 @@ class TriageMaster extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = context.watch<TriageProvider>();
 
-    return Scaffold(
-      body: PageView(
+    return PageView(
         controller: provider.pageController,
         physics: const NeverScrollableScrollPhysics(),
         children: [
@@ -174,7 +173,6 @@ class TriageMaster extends StatelessWidget {
             onReturnHomePressed: () => provider.resetAll(),
           ),
         ],
-      ),
     );
   }
 }

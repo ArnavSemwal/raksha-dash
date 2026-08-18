@@ -21,9 +21,8 @@ class RakshaApp extends StatelessWidget {
         title: 'Raksha Triage App',
         theme: ThemeData(
           fontFamily: 'Inter',
-          useMaterial3: true,
-          colorSchemeSeed: const Color(0xFF2563EB),
-          brightness: Brightness.light,
+          useMaterial3: false,
+          scaffoldBackgroundColor: Colors.white,
         ),
         home: const TriageMaster(),
       ),

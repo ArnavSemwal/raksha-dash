@@ -1,16 +1,8 @@
 import 'package:flutter/material.dart';
+import 'providers/triage_provider.dart' show ScanStatus;
 
-/// Status states for the Blood Pressure scan step
-enum BloodPressureScanStatus {
-  /// Initial state before measurement (Buttons: "Start BP Measurement", "Proceed to SpO2")
-  initial,
-
-  /// Clean scan completed (Green banner: "BP: 120/80 MMHG", link: "Tap to Retake")
-  clean,
-
-  /// Abnormal scan reading (Red warning banner: "WARNING: ABNORMAL BP DETECTED", link: "Tap to Retake")
-  abnormal,
-}
+/// Alias so all existing references to BloodPressureScanStatus compile unchanged.
+typedef BloodPressureScanStatus = ScanStatus;
 
 /// Production-ready, pixel-perfect StatelessWidget for the Raksha Step 3: Blood Pressure UI.
 ///

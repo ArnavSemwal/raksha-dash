@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'providers/triage_provider.dart' show ScanStatus;
 
-enum UrineScanStatus { initial, clean, abnormal }
+/// Alias so all existing references to UrineScanStatus compile unchanged.
+typedef UrineScanStatus = ScanStatus;
 
 /// Production-ready, pixel-perfect StatelessWidget for Step 5: Urine Analysis UI.
 class RakshaUrineAnalysisScreen extends StatelessWidget {

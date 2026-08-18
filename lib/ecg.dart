@@ -1,16 +1,8 @@
 import 'package:flutter/material.dart';
+import 'providers/triage_provider.dart' show ScanStatus;
 
-/// Status states for the ECG scan step
-enum EcgScanStatus {
-  /// Initial state before measurement
-  initial,
-
-  /// Clean scan completed
-  clean,
-
-  /// Abnormal scan reading detected
-  abnormal,
-}
+/// Alias so all existing references to EcgScanStatus compile unchanged.
+typedef EcgScanStatus = ScanStatus;
 
 /// Production-ready, pixel-perfect StatelessWidget for Step 2: ECG UI.
 class RakshaEcgScreen extends StatelessWidget {
