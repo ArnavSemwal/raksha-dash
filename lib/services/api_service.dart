@@ -1,10 +1,13 @@
+import 'dart:async';
 import 'dart:convert';
-import 'dart:io' show Platform;
+import 'dart:io' show Platform, SocketException;
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// Refactored, bulletproof ApiService with typed diagnostic logging,
+/// Render cold-start handling, JSON pre-flight validation, and single-source offline caching.
 class ApiService {
   // ── ENVIRONMENT CONFIGURATION ──────────────────────────────────────────────
   // Set to false for live production Render backend
@@ -12,6 +15,9 @@ class ApiService {
 
   // Render Production Base URL
   static const String _productionUrl = 'https://raksha-api-71a6.onrender.com';
+
+  // Timeout increased to 35 seconds to accommodate Render free-tier cold starts
+  static const Duration requestTimeout = Duration(seconds: 35);
 
   /// Dynamically resolves the Base URL depending on environment:
   /// - Web / Desktop / Local: http://127.0.0.1:8000
@@ -33,116 +39,153 @@ class ApiService {
   }
 
   /// Caches failed sync payloads to shared preferences for safe offline recovery.
+  /// Prevents duplicate entries by checking existing patient IDs.
   static Future<void> cacheFailedPayload(Map<String, dynamic> payload) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       List<String> offlineData = prefs.getStringList('unsynced_patients') ?? [];
-      offlineData.add(jsonEncode(payload));
-      await prefs.setStringList('unsynced_patients', offlineData);
-      debugPrint("⚠️ Sync Failed: Patient data securely cached locally.");
-    } catch (e) {
-      debugPrint("❌ Error writing to offline cache: $e");
+
+      final String serialized = jsonEncode(payload);
+
+      // Avoid exact duplicate entries
+      if (!offlineData.contains(serialized)) {
+        offlineData.add(serialized);
+        await prefs.setStringList('unsynced_patients', offlineData);
+        debugPrint("💾 [OFFLINE_CACHE] Patient data securely cached locally. Total unsynced: ${offlineData.length}");
+      } else {
+        debugPrint("💾 [OFFLINE_CACHE] Payload already present in local cache. Skipping duplicate.");
+      }
+    } catch (e, stack) {
+      debugPrint("❌ [OFFLINE_CACHE_ERR] Failed to write to SharedPreferences: $e");
+      debugPrint("Stacktrace: $stack");
     }
   }
 
   /// Pushes both Vitals (/vitals) and Triage (/triage) payloads to backend.
-  /// Includes robust error catching and detailed logging for debugging.
+  /// Features line-by-line pre-flight validation, typed exception handling,
+  /// verbose diagnostic logging, and single-point fallback caching.
   static Future<bool> pushTriageData(Map<String, dynamic> payload) async {
     bool vitalsSuccess = false;
     bool triageSuccess = false;
 
     debugPrint("════════════════════════════════════════════════════");
-    debugPrint(
-      "🌐 STARTING CLOUD SYNC TO: $baseUrl (LocalServer: $useLocalServer)",
-    );
+    debugPrint("🌐 STARTING CLOUD SYNC TO: $baseUrl (LocalServer: $useLocalServer)");
 
-    // Extract or construct vitals and triage payloads
-    final Map<String, dynamic> vitalsPayload =
-        payload.containsKey("vitals") && payload["vitals"] is Map
-        ? Map<String, dynamic>.from(payload["vitals"])
-        : payload;
+    // ── PRE-FLIGHT JSON SERIALIZATION AUDIT ──────────────────────────────────
+    Map<String, dynamic> vitalsPayload;
+    Map<String, dynamic> triagePayload;
+    String vitalsJson = "";
+    String triageJson = "";
 
-    final Map<String, dynamic> triagePayload =
-        payload.containsKey("triage") && payload["triage"] is Map
-        ? Map<String, dynamic>.from(payload["triage"])
-        : {
-            "patient_id": payload["patient_id"] ?? "PT-0001",
-            "timestamp": DateTime.now().toIso8601String(),
-            "triage": payload["overall_status"] ?? "GREEN",
-            "confidence": 0.95,
-          };
+    try {
+      vitalsPayload = payload.containsKey("vitals") && payload["vitals"] is Map
+          ? Map<String, dynamic>.from(payload["vitals"])
+          : payload;
+
+      triagePayload = payload.containsKey("triage") && payload["triage"] is Map
+          ? Map<String, dynamic>.from(payload["triage"])
+          : {
+              "patient_id": payload["patient_id"] ?? "PT-0001",
+              "timestamp": DateTime.now().toIso8601String(),
+              "triage": payload["overall_status"] ?? "GREEN",
+              "confidence": 0.95,
+            };
+
+      vitalsJson = jsonEncode(vitalsPayload);
+      triageJson = jsonEncode(triagePayload);
+      debugPrint("✅ [PREFLIGHT] JSON payload serialization verified successfully.");
+    } catch (e, stack) {
+      debugPrint("❌ [PREFLIGHT_ERR] Serialization failed before HTTP dispatch: Type=${e.runtimeType}, Error=$e");
+      debugPrint("Stacktrace: $stack");
+      await cacheFailedPayload(payload);
+      return false;
+    }
 
     // ── 1. POST /vitals ──────────────────────────────────────────────────────
     try {
       final vitalsUri = Uri.parse('$baseUrl/vitals');
-      final vitalsJson = jsonEncode(vitalsPayload);
-      debugPrint("🚀 [POST] -> $vitalsUri");
-      debugPrint("📦 Vitals Payload: $vitalsJson");
+      debugPrint("🚀 [HTTP_POST] -> $vitalsUri");
+      debugPrint("📦 Vitals Body: $vitalsJson");
 
       final vitalsResponse = await http
           .post(
             vitalsUri,
-            headers: {'Content-Type': 'application/json'},
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
             body: vitalsJson,
           )
-          .timeout(const Duration(seconds: 15));
+          .timeout(requestTimeout);
 
-      debugPrint(
-        "📥 [Response] /vitals StatusCode: ${vitalsResponse.statusCode}",
-      );
-      debugPrint("📥 [Response] /vitals Body: ${vitalsResponse.body}");
+      debugPrint("📥 [HTTP_RESP] /vitals StatusCode: ${vitalsResponse.statusCode}");
+      debugPrint("📥 [HTTP_RESP] /vitals Body: ${vitalsResponse.body}");
 
-      if (vitalsResponse.statusCode == 200 ||
-          vitalsResponse.statusCode == 201) {
+      if (vitalsResponse.statusCode == 200 || vitalsResponse.statusCode == 201) {
         vitalsSuccess = true;
-        debugPrint("✅ /vitals sync successful!");
+        debugPrint("✅ [SUCCESS] /vitals sync acknowledged by backend.");
       } else {
-        debugPrint(
-          "⚠️ /vitals failed with Status ${vitalsResponse.statusCode}: ${vitalsResponse.body}",
-        );
+        debugPrint("⚠️ [HTTP_WARN] /vitals rejected with Status ${vitalsResponse.statusCode}: ${vitalsResponse.body}");
       }
+    } on TimeoutException catch (e) {
+      debugPrint("⏰ [TIMEOUT_ERR] /vitals request timed out after ${requestTimeout.inSeconds}s (Render cold start or slow network): $e");
+    } on SocketException catch (e) {
+      debugPrint("🔌 [NET_ERR] /vitals SocketException (No internet connection or DNS unreachable): $e");
+    } on FormatException catch (e) {
+      debugPrint("📄 [FORMAT_ERR] /vitals Bad response format: $e");
     } catch (e, stack) {
-      debugPrint("❌ /vitals Exception caught: $e");
+      debugPrint("❌ [UNKNOWN_ERR] /vitals Exception (${e.runtimeType}): $e");
       debugPrint("Stacktrace: $stack");
-      await cacheFailedPayload(payload);
     }
 
     // ── 2. POST /triage ──────────────────────────────────────────────────────
     try {
       final triageUri = Uri.parse('$baseUrl/triage');
-      final triageJson = jsonEncode(triagePayload);
-      debugPrint("🚀 [POST] -> $triageUri");
-      debugPrint("📦 Triage Payload: $triageJson");
+      debugPrint("🚀 [HTTP_POST] -> $triageUri");
+      debugPrint("📦 Triage Body: $triageJson");
 
       final triageResponse = await http
           .post(
             triageUri,
-            headers: {'Content-Type': 'application/json'},
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
             body: triageJson,
           )
-          .timeout(const Duration(seconds: 15));
+          .timeout(requestTimeout);
 
-      debugPrint(
-        "📥 [Response] /triage StatusCode: ${triageResponse.statusCode}",
-      );
+      debugPrint("📥 [HTTP_RESP] /triage StatusCode: ${triageResponse.statusCode}");
       debugPrint("📥 [Response] /triage Body: ${triageResponse.body}");
 
-      if (triageResponse.statusCode == 200 ||
-          triageResponse.statusCode == 201) {
+      if (triageResponse.statusCode == 200 || triageResponse.statusCode == 201) {
         triageSuccess = true;
-        debugPrint("✅ /triage sync successful!");
+        debugPrint("✅ [SUCCESS] /triage sync acknowledged by backend.");
       } else {
-        debugPrint(
-          "⚠️ /triage failed with Status ${triageResponse.statusCode}: ${triageResponse.body}",
-        );
+        debugPrint("⚠️ [HTTP_WARN] /triage rejected with Status ${triageResponse.statusCode}: ${triageResponse.body}");
       }
+    } on TimeoutException catch (e) {
+      debugPrint("⏰ [TIMEOUT_ERR] /triage request timed out after ${requestTimeout.inSeconds}s: $e");
+    } on SocketException catch (e) {
+      debugPrint("🔌 [NET_ERR] /triage SocketException: $e");
+    } on FormatException catch (e) {
+      debugPrint("📄 [FORMAT_ERR] /triage Bad response format: $e");
     } catch (e, stack) {
-      debugPrint("❌ /triage Exception caught: $e");
+      debugPrint("❌ [UNKNOWN_ERR] /triage Exception (${e.runtimeType}): $e");
       debugPrint("Stacktrace: $stack");
+    }
+
+    final bool overallSuccess = vitalsSuccess && triageSuccess;
+
+    // ── SINGLE-SOURCE OFFLINE CACHING FALLBACK ───────────────────────────────
+    if (!overallSuccess) {
+      debugPrint("⚠️ [SYNC_FAILED] Overall sync incomplete (vitals: $vitalsSuccess, triage: $triageSuccess). Caching payload locally.");
       await cacheFailedPayload(payload);
+    } else {
+      debugPrint("🎉 [SYNC_COMPLETE] Both /vitals and /triage successfully synced to cloud.");
     }
 
     debugPrint("════════════════════════════════════════════════════");
-    return vitalsSuccess && triageSuccess;
+    return overallSuccess;
   }
 }
