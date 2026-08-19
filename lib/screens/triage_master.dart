@@ -60,7 +60,7 @@ class TriageMaster extends StatelessWidget {
           onGenderChanged: (gender) {
             provider.setGender(gender);
           },
-          onProceedPressed: () => _runWithAiDelay(context, () => provider.goToNextStep()),
+          onProceedPressed: () => provider.goToNextStep(),
         ),
 
         // Page 2: Stethoscope Step
@@ -71,7 +71,7 @@ class TriageMaster extends StatelessWidget {
           totalSteps: TriageProvider.totalPages,
           onPrimaryPressed: provider.stethStatus == ScanStatus.initial
               ? () => _runWithAiDelay(context, () => provider.runStethScan())
-              : () => _runWithAiDelay(context, () => provider.goToNextStep()),
+              : () => provider.goToNextStep(),
         ),
 
         // Page 3: ECG Step
@@ -85,7 +85,7 @@ class TriageMaster extends StatelessWidget {
               : '-- BPM',
           onStartRecordingPressed: () => _runWithAiDelay(context, () => provider.runEcgScan()),
           onRetakePressed: () => provider.resetEcgScan(),
-          onProceedPressed: () => _runWithAiDelay(context, () => provider.goToNextStep()),
+          onProceedPressed: () => provider.goToNextStep(),
         ),
 
         // Page 4: Blood Pressure Step
@@ -99,7 +99,7 @@ class TriageMaster extends StatelessWidget {
               : '-- mmHg',
           onStartMeasurementPressed: () => _runWithAiDelay(context, () => provider.runBpScan()),
           onRetakePressed: () => provider.resetBpScan(),
-          onProceedPressed: () => _runWithAiDelay(context, () => provider.goToNextStep()),
+          onProceedPressed: () => provider.goToNextStep(),
         ),
 
         // Page 5: SpO2 + Temperature Step
@@ -116,7 +116,7 @@ class TriageMaster extends StatelessWidget {
               : '--°C',
           onStartMeasurementPressed: () => _runWithAiDelay(context, () => provider.runSpo2TempScan()),
           onRetakePressed: () => provider.resetSpo2TempScan(),
-          onProceedPressed: () => _runWithAiDelay(context, () => provider.goToNextStep()),
+          onProceedPressed: () => provider.goToNextStep(),
         ),
 
         // Page 6: Urine Analysis Step
@@ -127,7 +127,7 @@ class TriageMaster extends StatelessWidget {
           totalSteps: TriageProvider.totalPages,
           onStartScanPressed: () => _runWithAiDelay(context, () => provider.runUrineScan()),
           onRetakePressed: () => provider.resetUrineScan(),
-          onFinishPressed: () => _runWithAiDelay(context, () => provider.goToNextStep()),
+          onFinishPressed: () => provider.goToNextStep(),
         ),
 
         // ── Page 7: Final Triage Summary ──────────────────────────────────────
