@@ -5,6 +5,7 @@ import 'providers/triage_provider.dart';
 import 'screens/triage_master.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const RakshaApp());
 }
 

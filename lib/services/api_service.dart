@@ -3,6 +3,7 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
   // ── ENVIRONMENT CONFIGURATION ──────────────────────────────────────────────
@@ -29,6 +30,19 @@ class ApiService {
     } catch (_) {}
 
     return 'http://127.0.0.1:8000';
+  }
+
+  /// Caches failed sync payloads to shared preferences for safe offline recovery.
+  static Future<void> cacheFailedPayload(Map<String, dynamic> payload) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      List<String> offlineData = prefs.getStringList('unsynced_patients') ?? [];
+      offlineData.add(jsonEncode(payload));
+      await prefs.setStringList('unsynced_patients', offlineData);
+      debugPrint("⚠️ Sync Failed: Patient data securely cached locally.");
+    } catch (e) {
+      debugPrint("❌ Error writing to offline cache: $e");
+    }
   }
 
   /// Pushes both Vitals (/vitals) and Triage (/triage) payloads to backend.
@@ -90,6 +104,7 @@ class ApiService {
     } catch (e, stack) {
       debugPrint("❌ /vitals Exception caught: $e");
       debugPrint("Stacktrace: $stack");
+      await cacheFailedPayload(payload);
     }
 
     // ── 2. POST /triage ──────────────────────────────────────────────────────
@@ -124,6 +139,7 @@ class ApiService {
     } catch (e, stack) {
       debugPrint("❌ /triage Exception caught: $e");
       debugPrint("Stacktrace: $stack");
+      await cacheFailedPayload(payload);
     }
 
     debugPrint("════════════════════════════════════════════════════");
