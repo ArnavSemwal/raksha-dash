@@ -201,15 +201,15 @@ class TriageProvider extends ChangeNotifier {
   // CLINICAL EVALUATION FUNCTIONS (MEWS Rules)
   // ════════════════════════════════════════════════════════════════════════
 
-  /// Even probability selector for balanced demo (33.3% GREEN, 33.3% YELLOW, 33.3% RED)
+  /// Truly randomized 50-30-20 condition selector (50% GREEN, 30% RED, 20% YELLOW)
   String _selectWeightedCondition() {
     final double r = _rng.nextDouble();
-    if (r < 0.3333) {
-      return "GREEN"; // 33.3% Normal
-    } else if (r < 0.6666) {
-      return "YELLOW"; // 33.3% Warning
+    if (r < 0.50) {
+      return "GREEN"; // 50% Normal
+    } else if (r < 0.80) {
+      return "RED"; // 30% Critical
     } else {
-      return "RED"; // 33.3% Critical
+      return "YELLOW"; // 20% Warning
     }
   }
 
