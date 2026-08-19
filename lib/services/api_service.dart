@@ -109,7 +109,8 @@ class ApiService {
           payload.containsKey("triage") && payload["triage"] is Map
               ? Map<String, dynamic>.from(payload["triage"])
               : {
-                "patient_id": payload["patient_id"] ?? "PT-0001",
+                "patient_id": payload["patient_id"] ??
+                    'PT-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}',
                 "timestamp": DateTime.now().toIso8601String(),
                 "triage": payload["overall_status"] ?? "GREEN",
                 "confidence": 0.95,

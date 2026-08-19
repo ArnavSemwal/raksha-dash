@@ -106,8 +106,13 @@ class PatientInfo {
     this.village,
   });
 
-  factory PatientInfo.placeholder() =>
-      const PatientInfo(id: 'PT-0000', name: '', age: 0, gender: '', phone: '');
+  factory PatientInfo.placeholder() => PatientInfo(
+        id: 'PT-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}',
+        name: '',
+        age: 0,
+        gender: '',
+        phone: '',
+      );
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -374,8 +379,11 @@ class TriageProvider extends ChangeNotifier {
   }
 
   Map<String, dynamic> generateVitalsJsonPayload() {
+    final String activeId = (_patientInfo.id.isEmpty || _patientInfo.id == 'PT-0000' || _patientInfo.id == 'PT-0001')
+        ? 'PT-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}'
+        : _patientInfo.id;
     return {
-      "patient_id": _patientInfo.id.isEmpty ? "PT-0001" : _patientInfo.id,
+      "patient_id": activeId,
       "timestamp": DateTime.now().toIso8601String(),
       "stethoscope_status": _stethStatus.name,
       "ecg_hr": (_ecgResult?.heartRate ?? _stethResult?.heartRate ?? 72.0).toDouble(),
@@ -390,8 +398,11 @@ class TriageProvider extends ChangeNotifier {
   }
 
   Map<String, dynamic> generateTriageJsonPayload() {
+    final String activeId = (_patientInfo.id.isEmpty || _patientInfo.id == 'PT-0000' || _patientInfo.id == 'PT-0001')
+        ? 'PT-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}'
+        : _patientInfo.id;
     return {
-      "patient_id": _patientInfo.id.isEmpty ? "PT-0001" : _patientInfo.id,
+      "patient_id": activeId,
       "timestamp": DateTime.now().toIso8601String(),
       "triage": hasAnyAbnormal ? "RED" : "GREEN",
       "confidence": hasAnyAbnormal ? 0.88 : 0.96,
@@ -405,8 +416,19 @@ class TriageProvider extends ChangeNotifier {
     };
   }
 
-  /// Sends triage data to cloud API. Returns true on success.
+  /// Sends triage data to cloud API. Ensures a fresh dynamic ID is generated right before sync.
   Future<bool> syncDataToCloud() async {
+    if (_patientInfo.id.isEmpty || _patientInfo.id == 'PT-0000' || _patientInfo.id == 'PT-0001') {
+      final String freshId = 'PT-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}';
+      _patientInfo = PatientInfo(
+        id: freshId,
+        name: _patientInfo.name,
+        age: _patientInfo.age,
+        gender: _patientInfo.gender,
+        phone: _patientInfo.phone,
+        village: _patientInfo.village,
+      );
+    }
     final payload = generateJsonPayload();
     return await ApiService.pushTriageData(payload);
   }
