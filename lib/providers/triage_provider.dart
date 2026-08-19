@@ -201,9 +201,10 @@ class TriageProvider extends ChangeNotifier {
   // CLINICAL EVALUATION FUNCTIONS (MEWS Rules)
   // ════════════════════════════════════════════════════════════════════════
 
-  // ── 1. Stethoscope ──────────────────────────────────────────────────────
+  // ── 1. Stethoscope (Dataset Bounds: HR 65 - 160) ────────────────────────
   void runStethScan() {
-    final hr = 40.0 + _rng.nextDouble() * 110;
+    // Generate Heart Rate strictly between 65.0 and 160.0
+    final hr = (65.0 + _rng.nextDouble() * 95.0).clamp(65.0, 160.0);
     final lungSounds = ['Clear', 'Clear', 'Clear', 'Wheezing', 'Crackles'];
     final lung = lungSounds[_rng.nextInt(lungSounds.length)];
 
@@ -213,7 +214,7 @@ class TriageProvider extends ChangeNotifier {
     );
 
     final bool isAbnormal =
-        hr < 50 || hr > 120 || lung == 'Crackles' || lung == 'Wheezing';
+        hr < 70 || hr > 120 || lung == 'Crackles' || lung == 'Wheezing';
 
     _stethStatus = isAbnormal ? ScanStatus.abnormal : ScanStatus.clean;
     notifyListeners();
@@ -225,9 +226,10 @@ class TriageProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ── 2. ECG ──────────────────────────────────────────────────────────────
+  // ── 2. ECG (Dataset Bounds: HR 65 - 160) ────────────────────────────────
   void runEcgScan() {
-    final hr = 40.0 + _rng.nextDouble() * 110;
+    // Generate Heart Rate strictly between 65.0 and 160.0
+    final hr = (65.0 + _rng.nextDouble() * 95.0).clamp(65.0, 160.0);
     final rhythms = [
       'Normal Sinus',
       'Normal Sinus',
@@ -236,7 +238,7 @@ class TriageProvider extends ChangeNotifier {
       'Sinus Tachycardia',
     ];
     final rhythm = rhythms[_rng.nextInt(rhythms.length)];
-    final qt = 350.0 + _rng.nextDouble() * 200;
+    final qt = 350.0 + _rng.nextDouble() * 130;
 
     _ecgResult = EcgResult(
       heartRate: double.parse(hr.toStringAsFixed(1)),
@@ -245,7 +247,7 @@ class TriageProvider extends ChangeNotifier {
     );
 
     final bool isAbnormal =
-        hr < 50 || hr > 120 || rhythm != 'Normal Sinus' || qt > 480;
+        hr < 70 || hr > 120 || rhythm != 'Normal Sinus' || qt > 460;
 
     _ecgStatus = isAbnormal ? ScanStatus.abnormal : ScanStatus.clean;
     notifyListeners();
@@ -257,11 +259,12 @@ class TriageProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ── 3. BP (Strict MEWS: Systolic > 140 or < 90, Diastolic > 90 or < 60) ──
+  // ── 3. BP (Dataset Bounds: Systolic 110 - 155) ─────────────────────────
   void runBpScan() {
-    final systolic = 80 + _rng.nextInt(81); // 80 to 160
-    final diastolic = 50 + _rng.nextInt(51); // 50 to 100
-    final pulse = 55 + _rng.nextInt(61); // 55 to 115
+    // Generate Systolic BP strictly between 110 and 155
+    final systolic = (110 + _rng.nextInt(46)).clamp(110, 155);
+    final diastolic = (65 + _rng.nextInt(31)).clamp(65, 95);
+    final pulse = (65 + _rng.nextInt(76)).clamp(65, 140);
 
     _bpResult = BpResult(
       systolic: systolic,
@@ -270,7 +273,7 @@ class TriageProvider extends ChangeNotifier {
     );
 
     final bool isAbnormal =
-        systolic > 140 || systolic < 90 || diastolic > 90 || diastolic < 60;
+        systolic > 140 || systolic < 115 || diastolic > 90 || diastolic < 60;
 
     _bpStatus = isAbnormal ? ScanStatus.abnormal : ScanStatus.clean;
     notifyListeners();
@@ -282,11 +285,14 @@ class TriageProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ── 4. SpO2 + Temp (Strict MEWS: SpO2 < 90 OR HR < 40 or > 130 OR Temp > 39.0 or < 35.0) ──
+  // ── 4. SpO2 + Temp (Dataset Bounds: SpO2 70-100, HR 65-160, Temp 36.5-38.8) ──
   void runSpo2TempScan() {
-    final spo2 = 85 + _rng.nextInt(16); // 85 to 100
-    final hr = 35 + _rng.nextInt(106); // 35 to 140
-    final temp = 34.5 + _rng.nextDouble() * 5.5; // 34.5 to 40.0
+    // SpO2: 70 to 100
+    final spo2 = (70 + _rng.nextInt(31)).clamp(70, 100);
+    // HR: 65 to 160
+    final hr = (65 + _rng.nextInt(96)).clamp(65, 160);
+    // Temp: 36.5 to 38.8
+    final temp = (36.5 + _rng.nextDouble() * 2.3).clamp(36.5, 38.8);
 
     _spo2TempResult = Spo2TempResult(
       spo2: spo2,
@@ -295,7 +301,7 @@ class TriageProvider extends ChangeNotifier {
     );
 
     final bool isAbnormal =
-        spo2 < 90 || hr < 40 || hr > 130 || temp > 39.0 || temp < 35.0;
+        spo2 < 92 || hr < 65 || hr > 120 || temp > 37.8 || temp < 36.5;
 
     _spo2TempStatus = isAbnormal ? ScanStatus.abnormal : ScanStatus.clean;
     notifyListeners();
@@ -416,6 +422,34 @@ class TriageProvider extends ChangeNotifier {
     };
   }
 
+  /// Enforces hard validation rules matching AI training dataset bounds:
+  /// - SpO2: 70 to 100
+  /// - Heart Rate: 65 to 160
+  /// - Systolic BP: 110 to 155
+  /// - Temperature: 36.5 to 38.8
+  ///
+  /// Returns validation error string if out of bounds, or null if valid.
+  static String? validateDatasetBounds({
+    num? spo2,
+    num? heartRate,
+    num? systolicBp,
+    num? temperature,
+  }) {
+    if (spo2 != null && (spo2 < 70 || spo2 > 100)) {
+      return "SpO2 ($spo2%) out of dataset bounds (70 - 100)";
+    }
+    if (heartRate != null && (heartRate < 65 || heartRate > 160)) {
+      return "Heart Rate ($heartRate BPM) out of dataset bounds (65 - 160)";
+    }
+    if (systolicBp != null && (systolicBp < 110 || systolicBp > 155)) {
+      return "Systolic BP ($systolicBp mmHg) out of dataset bounds (110 - 155)";
+    }
+    if (temperature != null && (temperature < 36.5 || temperature > 38.8)) {
+      return "Temperature ($temperature°C) out of dataset bounds (36.5 - 38.8)";
+    }
+    return null;
+  }
+
   /// Sends triage data to cloud API. Ensures a fresh dynamic ID is generated right before sync.
   Future<bool> syncDataToCloud() async {
     if (_patientInfo.id.isEmpty || _patientInfo.id == 'PT-0000' || _patientInfo.id == 'PT-0001') {
@@ -429,6 +463,20 @@ class TriageProvider extends ChangeNotifier {
         village: _patientInfo.village,
       );
     }
+
+    // Validate hard dataset bounds
+    final String? boundsError = validateDatasetBounds(
+      spo2: _spo2TempResult?.spo2,
+      heartRate: _stethResult?.heartRate ?? _ecgResult?.heartRate ?? _spo2TempResult?.heartRate,
+      systolicBp: _bpResult?.systolic,
+      temperature: _spo2TempResult?.temperature,
+    );
+
+    if (boundsError != null) {
+      debugPrint("⛔ [VALIDATION_ERR] Submission blocked: $boundsError");
+      return false;
+    }
+
     final payload = generateJsonPayload();
     return await ApiService.pushTriageData(payload);
   }
