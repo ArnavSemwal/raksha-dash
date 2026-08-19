@@ -196,21 +196,22 @@ class TriageProvider extends ChangeNotifier {
   UrineResult? get urineResult => _urineResult;
 
   final Random _rng = Random();
+  int _demoCounter = 0;
 
   // ════════════════════════════════════════════════════════════════════════
   // CLINICAL EVALUATION FUNCTIONS (MEWS Rules)
   // ════════════════════════════════════════════════════════════════════════
 
-  /// Truly randomized 50-30-20 condition selector (50% GREEN, 30% RED, 20% YELLOW)
+  /// Strictly alternating GREEN/RED selector for predictable demo flow
   String _selectWeightedCondition() {
-    final double r = _rng.nextDouble();
-    if (r < 0.50) {
-      return "GREEN"; // 50% Normal
-    } else if (r < 0.80) {
-      return "RED"; // 30% Critical
+    String condition;
+    if (_demoCounter % 2 == 0) {
+      condition = "GREEN";
     } else {
-      return "YELLOW"; // 20% Warning
+      condition = "RED";
     }
+    _demoCounter++;
+    return condition;
   }
 
   // ── 1. Stethoscope (Dataset Bounds: HR 65 - 160) ────────────────────────
