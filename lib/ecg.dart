@@ -180,10 +180,7 @@ class RakshaEcgScreen extends StatelessWidget {
   }
 
   Widget _buildIllustrationCard() {
-    const String defaultUrl =
-        'https://lh3.googleusercontent.com/aida-public/AB6AXuBgYvILIBoOI59JUCY3VwNr0sfGZMps-sIqG2CcOgiM2kfAQAL-0MIFixd2teF1ffPH7gQNDO3Zx4Lnn1jOmCIOQOFZ3qIEF-wr5BmBQOCR9R4etFO2hlcSRHaDOY-PwZO6iJnk0GOns2jYbk5fjrZCAAX2RvbxOhmhozpWcemC4tAgCJ8yHiL6A4q4m_8uFfP_dsGP50sXgkNyYb1cjK3zBsUTpG4km4udFZ_PT9ZGmNzIssc8VLnHqZ3QaU2RV-XNFw';
-
-    final String targetUrl = illustrationUrl ?? defaultUrl;
+    final String assetPath = illustrationUrl ?? 'assets/images/ecg.png';
 
     return Container(
       width: double.infinity,
@@ -196,24 +193,11 @@ class RakshaEcgScreen extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12.0),
-        child: Image.network(
-          targetUrl,
+        child: Image.asset(
+          assetPath,
           fit: BoxFit.contain,
           errorBuilder: (context, error, stackTrace) =>
               _buildFallbackIllustration(),
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child;
-            return const Center(
-              child: SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(primaryBlue),
-                ),
-              ),
-            );
-          },
         ),
       ),
     );

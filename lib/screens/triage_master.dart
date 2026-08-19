@@ -47,7 +47,7 @@ class TriageMaster extends StatelessWidget {
       children: [
         // Page 0: Base / Home Landing Screen
         RakshaTriageHomeScreen(
-          onStartCheck: () => _runWithAiDelay(context, () => provider.goToNextStep()),
+          onStartCheck: () => provider.goToNextStep(),
         ),
 
         // ── Page 1: Patient Registration ──────────────

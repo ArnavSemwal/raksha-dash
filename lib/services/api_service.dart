@@ -12,7 +12,7 @@ class ApiService {
   // ── ENVIRONMENT CONFIGURATION ──────────────────────────────────────────────
   // Set to true for local backend server (Port 8000 with CORS support)
   // Set to false for live production Render backend
-  static const bool useLocalServer = true;
+  static const bool useLocalServer = false;
 
   // Render Production Base URL
   static const String _productionUrl = 'https://raksha-api-71a6.onrender.com';

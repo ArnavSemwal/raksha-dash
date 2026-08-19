@@ -300,40 +300,47 @@ class RakshaPatientRegistrationScreen extends StatelessWidget {
         border: Border.all(color: borderGray, width: 1.0),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 14.0),
-      child: DropdownButtonFormField<String>(
-        initialValue: (selectedGender != null && selectedGender!.isNotEmpty)
-            ? selectedGender
-            : null,
-        onChanged: onGenderChanged,
-        icon: const Icon(
-          Icons.expand_more_rounded,
-          color: outlineGray,
-          size: 22,
-        ),
-        decoration: const InputDecoration(
-          icon: Icon(Icons.wc_outlined, color: outlineGray, size: 20),
-          border: InputBorder.none,
-          isDense: true,
-          contentPadding: EdgeInsets.zero,
-        ),
-        hint: const Text(
-          'Select gender',
-          style: TextStyle(
-            fontFamily: 'Inter',
-            fontSize: 16,
-            color: outlineGray,
+      child: Row(
+        children: [
+          const Icon(Icons.wc_outlined, color: outlineGray, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: DropdownButtonFormField<String>(
+              initialValue: (selectedGender != null && selectedGender!.isNotEmpty)
+                  ? selectedGender
+                  : null,
+              onChanged: onGenderChanged,
+              icon: const Icon(
+                Icons.expand_more_rounded,
+                color: outlineGray,
+                size: 22,
+              ),
+              decoration: const InputDecoration(
+                border: InputBorder.none,
+                isDense: true,
+                contentPadding: EdgeInsets.zero,
+              ),
+              hint: const Text(
+                'Select gender',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 16,
+                  color: outlineGray,
+                ),
+              ),
+              style: const TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 16,
+                color: darkCharcoal,
+              ),
+              dropdownColor: Colors.white,
+              items: const [
+                DropdownMenuItem(value: 'Male', child: Text('Male')),
+                DropdownMenuItem(value: 'Female', child: Text('Female')),
+                DropdownMenuItem(value: 'Other', child: Text('Other')),
+              ],
+            ),
           ),
-        ),
-        style: const TextStyle(
-          fontFamily: 'Inter',
-          fontSize: 16,
-          color: darkCharcoal,
-        ),
-        dropdownColor: Colors.white,
-        items: const [
-          DropdownMenuItem(value: 'Male', child: Text('Male')),
-          DropdownMenuItem(value: 'Female', child: Text('Female')),
-          DropdownMenuItem(value: 'Other', child: Text('Other')),
         ],
       ),
     );
