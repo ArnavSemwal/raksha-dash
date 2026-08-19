@@ -10,17 +10,18 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// pre-flight JSON audit, typed exception logging, and offline fail-safe caching.
 class ApiService {
   // ── ENVIRONMENT CONFIGURATION ──────────────────────────────────────────────
-  // Set to true for local backend server (Port 8000 with CORS support)
-  // Set to false for live production Render backend
+  // Set to false = PRODUCTION MODE → all traffic routed to Render cloud
+  // Set to true  = LOCAL MODE       → traffic routed to 127.0.0.1:8000
   static const bool useLocalServer = false;
 
-  // Render Production Base URL
+  // ── PRODUCTION URLS (no trailing slash — prevents double-slash on endpoint append)
   static const String _productionUrl = 'https://raksha-api-71a6.onrender.com';
+  static const String mlEngineUrl    = 'https://raksha-sim.onrender.com';
 
-  // Request timeout duration
+  // Request timeout — 35s accounts for Render free-tier cold starts
   static const Duration requestTimeout = Duration(seconds: 35);
 
-  /// Primary Base URL
+  /// Primary Base URL — resolves to production or local depending on flag
   static String get baseUrl {
     if (!useLocalServer) return _productionUrl;
     return _localUrl;
