@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/triage_provider.dart';
+import 'ai_triage_screen.dart';
 
 /// Native Flutter implementation of the Stitch "RAW VITALS" hardware interface design.
 class RakshaHardwareVitalsScreen extends StatelessWidget {
@@ -42,182 +43,209 @@ class RakshaHardwareVitalsScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: _bgSurface,
       body: SafeArea(
-        child: Column(
-          children: [
-            // ── TopAppBar Header with Progress Bar ──────────────────────
-            Container(
-              decoration: const BoxDecoration(
-                color: _bgSurface,
-                border: Border(
-                  bottom: BorderSide(color: _onSurface, width: 2.0),
-                ),
-              ),
-              child: Column(
-                children: [
-                  // Progress Bar (Linear Navigation 50%)
-                  Container(
-                    height: 4,
-                    width: double.infinity,
-                    color: _outlineVariant.withValues(alpha: 0.3),
-                    alignment: Alignment.centerLeft,
-                    child: FractionallySizedBox(
-                      widthFactor: 0.5,
-                      child: Container(color: _primaryContainer),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 450),
+            child: Column(
+              children: [
+                // ── TopAppBar Header with Progress Bar ──────────────────────
+                Container(
+                  decoration: const BoxDecoration(
+                    color: _bgSurface,
+                    border: Border(
+                      bottom: BorderSide(color: _onSurface, width: 2.0),
                     ),
                   ),
-                  // App Title Row
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24.0,
-                      vertical: 16.0,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        Icon(
-                          Icons.shield,
-                          color: _primaryCobalt,
-                          size: 28,
+                  child: Column(
+                    children: [
+                      // Progress Bar (Linear Navigation 50%)
+                      Container(
+                        height: 4,
+                        width: double.infinity,
+                        color: _outlineVariant.withValues(alpha: 0.3),
+                        alignment: Alignment.centerLeft,
+                        child: FractionallySizedBox(
+                          widthFactor: 0.5,
+                          child: Container(color: _primaryContainer),
                         ),
-                        SizedBox(width: 8),
-                        Text(
-                          'RAKSHA',
+                      ),
+                      // App Title Row
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24.0,
+                          vertical: 16.0,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            Icon(
+                              Icons.shield,
+                              color: _primaryCobalt,
+                              size: 28,
+                            ),
+                            SizedBox(width: 8),
+                            Text(
+                              'RAKSHA',
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 24,
+                                fontWeight: FontWeight.w800,
+                                color: _primaryCobalt,
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // ── Main Content Area ───────────────────────────────────────
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Header Text
+                        const Text(
+                          'RAW VITALS',
                           style: TextStyle(
                             fontFamily: 'Inter',
                             fontSize: 24,
-                            fontWeight: FontWeight.w800,
-                            color: _primaryCobalt,
-                            letterSpacing: -0.5,
+                            fontWeight: FontWeight.w700,
+                            color: _onSurface,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Asymmetrical Grid Layout
+                        Expanded(
+                          child: Column(
+                            children: [
+                              // Row 1: SpO2 Card (50%) & Heart Rate Card (50%)
+                              Expanded(
+                                flex: 1,
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildVitalCard(
+                                        icon: Icons.air,
+                                        label: 'SPO2',
+                                        value: spo2Val,
+                                        unit: '%',
+                                        sensor: 'SENSOR: MAX30102',
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: _buildVitalCard(
+                                        icon: Icons.monitor_heart_outlined,
+                                        label: 'HR',
+                                        value: hrVal,
+                                        unit: 'BPM',
+                                        sensor: 'SENSOR: ECG module',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+
+                              // Row 2: Temperature Card (100%)
+                              Expanded(
+                                flex: 1,
+                                child: _buildWideVitalCard(
+                                  icon: Icons.device_thermostat_outlined,
+                                  label: 'TEMP (CORE)',
+                                  value: tempVal,
+                                  unit: '°C',
+                                  sensor: 'SENSOR: MLX90614',
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+
+                              // Row 3: Stethoscope Rate Card (100%)
+                              Expanded(
+                                flex: 1,
+                                child: _buildWideVitalCard(
+                                  icon: Icons.medical_services_outlined,
+                                  label: 'STETHOSCOPE',
+                                  value: stethRpmVal,
+                                  unit: 'RPM',
+                                  sensor: 'SENSOR: MAX4466',
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
                   ),
-                ],
-              ),
-            ),
-
-            // ── Main Content Area ───────────────────────────────────────
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header Text
-                    const Text(
-                      'RAW VITALS',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
-                        color: _onSurface,
-                        letterSpacing: -0.3,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Asymmetrical Grid Layout
-                    Expanded(
-                      child: Column(
-                        children: [
-                          // Row 1: SpO2 Card (50%) & Heart Rate Card (50%)
-                          Expanded(
-                            flex: 1,
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: _buildVitalCard(
-                                    icon: Icons.air,
-                                    label: 'SPO2',
-                                    value: spo2Val,
-                                    unit: '%',
-                                    sensor: 'SENSOR: MAX30102',
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: _buildVitalCard(
-                                    icon: Icons.monitor_heart_outlined,
-                                    label: 'HR',
-                                    value: hrVal,
-                                    unit: 'BPM',
-                                    sensor: 'SENSOR: ECG module',
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Row 2: Temperature Card (100%)
-                          Expanded(
-                            flex: 1,
-                            child: _buildWideVitalCard(
-                              icon: Icons.device_thermostat_outlined,
-                              label: 'TEMP (CORE)',
-                              value: tempVal,
-                              unit: '°C',
-                              sensor: 'SENSOR: MLX90614',
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Row 3: Stethoscope Rate Card (100%)
-                          Expanded(
-                            flex: 1,
-                            child: _buildWideVitalCard(
-                              icon: Icons.medical_services_outlined,
-                              label: 'STETHOSCOPE',
-                              value: stethRpmVal,
-                              unit: 'RPM',
-                              sensor: 'SENSOR: MAX4466',
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
                 ),
-              ),
-            ),
 
-            // ── Bottom Action Anchor ────────────────────────────────────
-            Container(
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                color: _bgSurface,
-                border: Border(
-                  top: BorderSide(color: _onSurface, width: 2.0),
-                ),
-              ),
-              padding: const EdgeInsets.all(24.0),
-              child: SizedBox(
-                height: 60,
-                child: ElevatedButton.icon(
-                  onPressed: onExecuteTriage ?? () => provider.goToNextStep(),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _primaryCobalt,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8.0),
+                // ── Bottom Action Anchor ────────────────────────────────────
+                Container(
+                  width: double.infinity,
+                  decoration: const BoxDecoration(
+                    color: _bgSurface,
+                    border: Border(
+                      top: BorderSide(color: _onSurface, width: 2.0),
                     ),
                   ),
-                  icon: const Icon(Icons.memory, size: 24),
-                  label: const Text(
-                    'EXECUTE AI TRIAGE',
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.0,
+                  padding: const EdgeInsets.all(24.0),
+                  child: SizedBox(
+                    height: 60,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        if (onExecuteTriage != null) {
+                          onExecuteTriage!();
+                        } else {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AiTriageScreen(
+                                vitals: {
+                                  'hr': hrVal,
+                                  'bp': '120/80',
+                                  'spo2': spo2Val,
+                                  'temp': tempVal,
+                                },
+                                r: 240,
+                                g: 230,
+                                b: 140,
+                                triageStatus: 'RED',
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _primaryCobalt,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                      ),
+                      icon: const Icon(Icons.memory, size: 24),
+                      label: const Text(
+                        'EXECUTE AI TRIAGE',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -358,10 +386,10 @@ class RakshaHardwareVitalsScreen extends StatelessWidget {
                       fontSize: 18,
                       fontWeight: FontWeight.w500,
                       color: _onSurfaceVariant,
-                    ),
-                  ),
-                ],
+                ),
               ),
+            ],
+          ),
             ],
           ),
           Text(

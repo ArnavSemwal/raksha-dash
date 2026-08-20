@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'hardware_vitals_screen.dart';
 
 /// Data model representing each state in the Telemetry Sync sequence with multiple facts.
 class TelemetrySyncStep {
@@ -28,7 +29,7 @@ class _TelemetrySyncScreenState extends State<TelemetrySyncScreen>
   late final Animation<double> _scaleAnimation;
   Timer? _stepTimer;
   int _currentStepIndex = 0;
-  int _loopCycleCounter = 0;
+  final int _loopCycleCounter = 0;
 
   // The 4 sequential telemetry sync states with 3 facts per sensor
   static const List<TelemetrySyncStep> _syncSteps = [
@@ -89,16 +90,22 @@ class _TelemetrySyncScreenState extends State<TelemetrySyncScreen>
 
     _pulseController.repeat(reverse: true);
 
-    // 2.5-second interval timer cycling through the 4 states with cycle counter
+    // 2.5-second interval timer cycling through the 4 states then navigating to hardware_vitals_screen.dart
     _stepTimer = Timer.periodic(const Duration(milliseconds: 2500), (timer) {
-      if (mounted) {
+      if (!mounted) return;
+      if (_currentStepIndex < _syncSteps.length - 1) {
         setState(() {
           _currentStepIndex++;
-          if (_currentStepIndex >= _syncSteps.length) {
-            _currentStepIndex = 0;
-            _loopCycleCounter++;
-          }
         });
+      } else {
+        _stepTimer?.cancel();
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const RakshaHardwareVitalsScreen(),
+          ),
+        );
       }
     });
   }
@@ -123,120 +130,125 @@ class _TelemetrySyncScreenState extends State<TelemetrySyncScreen>
     return Scaffold(
       backgroundColor: const Color(0xFFFCF9F8),
       body: SafeArea(
-        child: Column(
-          children: [
-            // ── 1. Header (Reference header matching image, NO top progress bar) ──
-            Container(
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                color: Color(0xFFFCF9F8),
-                border: Border(
-                  bottom: BorderSide(color: Color(0xFF1C1B1B), width: 2.0),
-                ),
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.shield,
-                    color: primaryColor,
-                    size: 28,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'RAKSHA',
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 24,
-                      fontWeight: FontWeight.w800,
-                      color: primaryColor,
-                      letterSpacing: -0.5,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 450),
+            child: Column(
+              children: [
+                // ── 1. Header (Reference header matching image, NO top progress bar) ──
+                Container(
+                  width: double.infinity,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFCF9F8),
+                    border: Border(
+                      bottom: BorderSide(color: Color(0xFF1C1B1B), width: 2.0),
                     ),
                   ),
-                ],
-              ),
-            ),
-
-            // ── 2. Dynamic Content Engine (Middle Section with Generous Spacing) ──
-            Expanded(
-              child: Center(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 32.0),
-                  child: Column(
+                  padding: const EdgeInsets.symmetric(vertical: 16.0),
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Continuous Popping/Breathing Icon
-                      ScaleTransition(
-                        scale: _scaleAnimation,
-                        child: Container(
-                          width: 100,
-                          height: 100,
-                          decoration: BoxDecoration(
-                            color: primaryColor.withValues(alpha: 0.08),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: primaryColor.withValues(alpha: 0.3),
-                              width: 2.0,
-                            ),
-                          ),
-                          child: Icon(
-                            currentStep.icon,
-                            size: 48,
-                            color: primaryColor,
-                          ),
-                        ),
+                      Icon(
+                        Icons.shield,
+                        color: primaryColor,
+                        size: 28,
                       ),
-
-                      // Generous Breathing Room Spacer 1
-                      const SizedBox(height: 48),
-
-                      // Status Message
+                      const SizedBox(width: 8),
                       Text(
-                        currentStep.status,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
+                        'RAKSHA',
+                        style: TextStyle(
                           fontFamily: 'Inter',
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF1C1B1B),
-                          letterSpacing: 0.5,
-                          height: 1.3,
-                        ),
-                      ),
-
-                      // Generous Breathing Room Spacer 2
-                      const SizedBox(height: 40),
-
-                      // Clinical Fact / Tip Box
-                      Container(
-                        padding: const EdgeInsets.all(16.0),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF6F3F2),
-                          borderRadius: BorderRadius.circular(8.0),
-                          border: Border.all(
-                            color: const Color(0xFFC3C6D7),
-                            width: 1.5,
-                          ),
-                        ),
-                        child: Text(
-                          currentFact,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF434655),
-                            height: 1.4,
-                          ),
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                          color: primaryColor,
+                          letterSpacing: -0.5,
                         ),
                       ),
                     ],
                   ),
                 ),
-              ),
+
+                // ── 2. Dynamic Content Engine (Middle Section with Generous Spacing) ──
+                Expanded(
+                  child: Center(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Continuous Popping/Breathing Icon
+                          ScaleTransition(
+                            scale: _scaleAnimation,
+                            child: Container(
+                              width: 100,
+                              height: 100,
+                              decoration: BoxDecoration(
+                                color: primaryColor.withValues(alpha: 0.08),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: primaryColor.withValues(alpha: 0.3),
+                                  width: 2.0,
+                                ),
+                              ),
+                              child: Icon(
+                                currentStep.icon,
+                                size: 48,
+                                color: primaryColor,
+                              ),
+                            ),
+                          ),
+
+                          // Generous Breathing Room Spacer 1
+                          const SizedBox(height: 48),
+
+                          // Status Message
+                          Text(
+                            currentStep.status,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF1C1B1B),
+                              letterSpacing: 0.5,
+                              height: 1.3,
+                            ),
+                          ),
+
+                          // Generous Breathing Room Spacer 2
+                          const SizedBox(height: 40),
+
+                          // Clinical Fact / Tip Box
+                          Container(
+                            padding: const EdgeInsets.all(16.0),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF6F3F2),
+                              borderRadius: BorderRadius.circular(8.0),
+                              border: Border.all(
+                                color: const Color(0xFFC3C6D7),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Text(
+                              currentFact,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xFF434655),
+                                height: 1.4,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

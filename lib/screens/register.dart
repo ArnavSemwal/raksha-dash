@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
+import 'telemetry_sync_screen.dart';
 
-/// Converts the HTML/Tailwind layout completely into a single stateless Flutter Widget.
-class RakshaPatientRegistrationScreen extends StatelessWidget {
+/// Converts the HTML/Tailwind layout completely into a single stateful Flutter Widget.
+class RakshaPatientRegistrationScreen extends StatefulWidget {
   /// System generated patient ID string
   final String patientId;
-
-  /// Current workflow step fraction for top progress bar (e.g. 0.25 for 25%)
-  final double progressFraction;
 
   /// Callback when the "Proceed to Vitals" button is pressed
   final VoidCallback? onProceedPressed;
@@ -20,9 +18,8 @@ class RakshaPatientRegistrationScreen extends StatelessWidget {
   final ValueChanged<String?>? onGenderChanged;
 
   const RakshaPatientRegistrationScreen({
-    super.key, // Fixed: Modern super parameter syntax
-    this.patientId = 'PT-XXXX',
-    this.progressFraction = 0.25,
+    super.key,
+    this.patientId = 'PT-27609',
     this.onProceedPressed,
     this.nameController,
     this.ageController,
@@ -32,12 +29,25 @@ class RakshaPatientRegistrationScreen extends StatelessWidget {
     this.onGenderChanged,
   });
 
+  @override
+  State<RakshaPatientRegistrationScreen> createState() =>
+      _RakshaPatientRegistrationScreenState();
+}
+
+class _RakshaPatientRegistrationScreenState
+    extends State<RakshaPatientRegistrationScreen> {
+  String? _selectedGender;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedGender = widget.selectedGender;
+  }
+
   // Core Brand Colors
   static const Color primaryBlue = Color(0xFF2563EB); // Cobalt Blue #2563EB
   static const Color darkCharcoal = Color(0xFF121212); // Deep Charcoal #121212
-  static const Color outlineGray = Color(
-    0xFF737686,
-  ); // Icon & Subtext Outline #737686
+  static const Color outlineGray = Color(0xFF737686); // Icon & Subtext Outline #737686
   static const Color borderGray = Color(0xFFE5E2E1); // Border #E5E2E1
   static const Color bgSurface = Colors.white; // Background #FFFFFF
   static const Color inputBg = Color(0xFFFFFFFF); // Field Surface
@@ -49,9 +59,6 @@ class RakshaPatientRegistrationScreen extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // Top Progress Indicator
-            _buildProgressBar(progressFraction),
-
             // Main Content Area
             Expanded(
               child: SingleChildScrollView(
@@ -63,8 +70,7 @@ class RakshaPatientRegistrationScreen extends StatelessWidget {
                   child: Container(
                     constraints: const BoxConstraints(maxWidth: 520),
                     child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.stretch, // Fixed missing 'Axis'
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         // Header Section
                         _buildHeader(),
@@ -80,23 +86,9 @@ class RakshaPatientRegistrationScreen extends StatelessWidget {
             ),
 
             // Primary Action Button Pinned at Bottom
-            _buildBottomActionArea(),
+            _buildBottomActionArea(context),
           ],
         ),
-      ),
-    );
-  }
-
-  /// Builds top 4px linear progress indicator matching Tailwind `h-1`
-  Widget _buildProgressBar(double fraction) {
-    return Container(
-      height: 4.0,
-      width: double.infinity,
-      color: borderGray,
-      child: FractionallySizedBox(
-        alignment: Alignment.centerLeft,
-        widthFactor: fraction.clamp(0.0, 1.0),
-        child: Container(color: primaryBlue),
       ),
     );
   }
@@ -138,7 +130,7 @@ class RakshaPatientRegistrationScreen extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          'System Generated Patient ID: $patientId',
+          'System Generated Patient ID: ${widget.patientId}',
           textAlign: TextAlign.center,
           style: const TextStyle(
             color: outlineGray,
@@ -154,13 +146,13 @@ class RakshaPatientRegistrationScreen extends StatelessWidget {
   /// Builds the complete input form fields stack
   Widget _buildFormSection() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch, // Fixed missing 'Axis'
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // Patient Name Field
         _buildFieldLabel('Patient Name'),
         const SizedBox(height: 6),
         _buildTextField(
-          controller: nameController,
+          controller: widget.nameController,
           hintText: 'Enter full name',
           prefixIcon: Icons.person_outline_rounded,
         ),
@@ -168,18 +160,17 @@ class RakshaPatientRegistrationScreen extends StatelessWidget {
 
         // Age & Gender Row
         Row(
-          crossAxisAlignment: CrossAxisAlignment.start, // Fixed missing 'Axis'
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Age Field
             Expanded(
               child: Column(
-                crossAxisAlignment:
-                    CrossAxisAlignment.start, // Fixed missing 'Axis'
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildFieldLabel('Age'),
                   const SizedBox(height: 6),
                   _buildTextField(
-                    controller: ageController,
+                    controller: widget.ageController,
                     hintText: 'Years',
                     prefixIcon: Icons.calendar_today_outlined,
                     keyboardType: TextInputType.number,
@@ -192,8 +183,7 @@ class RakshaPatientRegistrationScreen extends StatelessWidget {
             // Gender Field
             Expanded(
               child: Column(
-                crossAxisAlignment:
-                    CrossAxisAlignment.start, // Fixed missing 'Axis'
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildFieldLabel('Gender'),
                   const SizedBox(height: 6),
@@ -211,7 +201,7 @@ class RakshaPatientRegistrationScreen extends StatelessWidget {
 
         // Aadhaar ID Field (Optional)
         _buildTextField(
-          controller: aadhaarController,
+          controller: widget.aadhaarController,
           hintText: 'Aadhaar ID (Optional)',
           prefixIcon: Icons.badge_outlined,
           isItalicHint: true,
@@ -220,7 +210,7 @@ class RakshaPatientRegistrationScreen extends StatelessWidget {
 
         // Ayushman ID Field (Optional)
         _buildTextField(
-          controller: ayushmanController,
+          controller: widget.ayushmanController,
           hintText: 'Ayushman ID (Optional)',
           prefixIcon: Icons.health_and_safety_outlined,
           isItalicHint: true,
@@ -306,10 +296,18 @@ class RakshaPatientRegistrationScreen extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: DropdownButtonFormField<String>(
-              initialValue: (selectedGender != null && selectedGender!.isNotEmpty)
-                  ? selectedGender
+              alignment: Alignment.centerLeft,
+              initialValue: (_selectedGender != null && _selectedGender!.isNotEmpty)
+                  ? _selectedGender
                   : null,
-              onChanged: onGenderChanged,
+              onChanged: (value) {
+                setState(() {
+                  _selectedGender = value;
+                });
+                if (widget.onGenderChanged != null) {
+                  widget.onGenderChanged!(value);
+                }
+              },
               icon: const Icon(
                 Icons.expand_more_rounded,
                 color: outlineGray,
@@ -335,9 +333,21 @@ class RakshaPatientRegistrationScreen extends StatelessWidget {
               ),
               dropdownColor: Colors.white,
               items: const [
-                DropdownMenuItem(value: 'Male', child: Text('Male')),
-                DropdownMenuItem(value: 'Female', child: Text('Female')),
-                DropdownMenuItem(value: 'Other', child: Text('Other')),
+                DropdownMenuItem(
+                  value: 'Male',
+                  alignment: Alignment.centerLeft,
+                  child: Text('Male'),
+                ),
+                DropdownMenuItem(
+                  value: 'Female',
+                  alignment: Alignment.centerLeft,
+                  child: Text('Female'),
+                ),
+                DropdownMenuItem(
+                  value: 'Other',
+                  alignment: Alignment.centerLeft,
+                  child: Text('Other'),
+                ),
               ],
             ),
           ),
@@ -347,7 +357,7 @@ class RakshaPatientRegistrationScreen extends StatelessWidget {
   }
 
   /// Builds bottom action button container
-  Widget _buildBottomActionArea() {
+  Widget _buildBottomActionArea(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
@@ -356,7 +366,18 @@ class RakshaPatientRegistrationScreen extends StatelessWidget {
           constraints: const BoxConstraints(maxWidth: 520),
           height: 56.0,
           child: ElevatedButton(
-            onPressed: onProceedPressed,
+            onPressed: () {
+              if (widget.onProceedPressed != null) {
+                widget.onProceedPressed!();
+              } else {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const TelemetrySyncScreen(),
+                  ),
+                );
+              }
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: primaryBlue,
               foregroundColor: Colors.white,
