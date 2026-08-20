@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'base.dart';
 
 /// Standalone Flutter screen displaying AI Triage decisions,
 /// dynamically visualizing raw RGB urine sensor data in a horizontal row,
@@ -433,7 +434,19 @@ class _AiTriageScreenState extends State<AiTriageScreen> {
                         SizedBox(
                           height: 54,
                           child: OutlinedButton(
-                            onPressed: widget.onReturnHome,
+                            onPressed: () {
+                              if (widget.onReturnHome != null) {
+                                widget.onReturnHome!();
+                              } else {
+                                Navigator.pushAndRemoveUntil(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const BaseScreen(),
+                                  ),
+                                  (Route<dynamic> route) => false,
+                                );
+                              }
+                            },
                             style: OutlinedButton.styleFrom(
                               foregroundColor: _onSurface,
                               side: const BorderSide(color: _onSurface, width: 2.0),

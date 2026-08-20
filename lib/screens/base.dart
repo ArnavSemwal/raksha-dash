@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'register.dart';
+
+/// Alias for BaseScreen to match linear routing terminology
+typedef BaseScreen = RakshaTriageHomeScreen;
 
 /// Converts the HTML/Tailwind layout completely into a single stateless Flutter Widget.
 class RakshaTriageHomeScreen extends StatelessWidget {
@@ -15,7 +19,7 @@ class RakshaTriageHomeScreen extends StatelessWidget {
   final String? heroImageUrl;
 
   const RakshaTriageHomeScreen({
-    super.key, // Fixed: Kept only modern super.key, removed the duplicate from end
+    super.key,
     this.onStartCheck,
     this.appVersion = 'v1.0-alpha',
     this.tagline = 'Healthcare for rural India',
@@ -51,15 +55,14 @@ class RakshaTriageHomeScreen extends StatelessWidget {
                     constraints: const BoxConstraints(maxWidth: 480),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment:
-                          CrossAxisAlignment.stretch, // Fixed: Added 'Axis'
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         // Central Vector Hero Illustration
                         _buildHeroIllustration(),
                         const SizedBox(height: 40),
 
                         // Hero Action Button
-                        _buildHeroActionButton(),
+                        _buildHeroActionButton(context),
                       ],
                     ),
                   ),
@@ -144,11 +147,22 @@ class RakshaTriageHomeScreen extends StatelessWidget {
   }
 
   /// Builds the oversized Primary Hero Button
-  Widget _buildHeroActionButton() {
+  Widget _buildHeroActionButton(BuildContext context) {
     return Container(
       constraints: const BoxConstraints(minHeight: 76.0),
       child: ElevatedButton(
-        onPressed: onStartCheck,
+        onPressed: () {
+          if (onStartCheck != null) {
+            onStartCheck!();
+          } else {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const RakshaPatientRegistrationScreen(),
+              ),
+            );
+          }
+        },
         style: ElevatedButton.styleFrom(
           backgroundColor: primaryBlue,
           foregroundColor: Colors.white,
