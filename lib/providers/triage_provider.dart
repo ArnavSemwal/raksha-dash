@@ -106,8 +106,13 @@ class PatientInfo {
     this.village,
   });
 
-  factory PatientInfo.placeholder() =>
-      const PatientInfo(id: 'PT-0000', name: '', age: 0, gender: '', phone: '');
+  factory PatientInfo.placeholder() => PatientInfo(
+        id: 'PT-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}',
+        name: '',
+        age: 0,
+        gender: '',
+        phone: '',
+      );
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -191,26 +196,54 @@ class TriageProvider extends ChangeNotifier {
   UrineResult? get urineResult => _urineResult;
 
   final Random _rng = Random();
+  int _demoCounter = 0;
 
   // ════════════════════════════════════════════════════════════════════════
   // CLINICAL EVALUATION FUNCTIONS (MEWS Rules)
   // ════════════════════════════════════════════════════════════════════════
 
-  // ── 1. Stethoscope ──────────────────────────────────────────────────────
+  /// Strictly alternating GREEN/RED selector for predictable demo flow
+  String _selectWeightedCondition() {
+    String condition;
+    if (_demoCounter % 2 == 0) {
+      condition = "GREEN";
+    } else {
+      condition = "RED";
+    }
+    _demoCounter++;
+    return condition;
+  }
+
+  // ── 1. Stethoscope (Dataset Bounds: HR 65 - 160) ────────────────────────
   void runStethScan() {
-    final hr = 40.0 + _rng.nextDouble() * 110;
-    final lungSounds = ['Clear', 'Clear', 'Clear', 'Wheezing', 'Crackles'];
-    final lung = lungSounds[_rng.nextInt(lungSounds.length)];
+    final String condition = _selectWeightedCondition();
+    double hr;
+    String lung;
+    ScanStatus status;
+
+    if (condition == "GREEN") {
+      // Normal (60%): HR 65-90, Clear lungs
+      hr = 65.0 + _rng.nextDouble() * 25.0;
+      lung = 'Clear';
+      status = ScanStatus.clean;
+    } else if (condition == "YELLOW") {
+      // Warning (20%): HR 91-115, Clear lungs
+      hr = 91.0 + _rng.nextDouble() * 24.0;
+      lung = 'Clear';
+      status = ScanStatus.clean;
+    } else {
+      // Critical (20%): HR 125-155, Abnormal lung sounds
+      hr = 125.0 + _rng.nextDouble() * 30.0;
+      final abnormalLungs = ['Wheezing', 'Crackles'];
+      lung = abnormalLungs[_rng.nextInt(abnormalLungs.length)];
+      status = ScanStatus.abnormal;
+    }
 
     _stethResult = StethResult(
       heartRate: double.parse(hr.toStringAsFixed(1)),
       lungSound: lung,
     );
-
-    final bool isAbnormal =
-        hr < 50 || hr > 120 || lung == 'Crackles' || lung == 'Wheezing';
-
-    _stethStatus = isAbnormal ? ScanStatus.abnormal : ScanStatus.clean;
+    _stethStatus = status;
     notifyListeners();
   }
 
@@ -220,29 +253,41 @@ class TriageProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ── 2. ECG ──────────────────────────────────────────────────────────────
+  // ── 2. ECG (Dataset Bounds: HR 65 - 160) ────────────────────────────────
   void runEcgScan() {
-    final hr = 40.0 + _rng.nextDouble() * 110;
-    final rhythms = [
-      'Normal Sinus',
-      'Normal Sinus',
-      'Normal Sinus',
-      'Atrial Fibrillation',
-      'Sinus Tachycardia',
-    ];
-    final rhythm = rhythms[_rng.nextInt(rhythms.length)];
-    final qt = 350.0 + _rng.nextDouble() * 200;
+    final String condition = _selectWeightedCondition();
+    double hr;
+    String rhythm;
+    double qt;
+    ScanStatus status;
+
+    if (condition == "GREEN") {
+      // Normal (60%): HR 65-90, Normal Sinus, QT 360-410
+      hr = 65.0 + _rng.nextDouble() * 25.0;
+      rhythm = 'Normal Sinus';
+      qt = 360.0 + _rng.nextDouble() * 50.0;
+      status = ScanStatus.clean;
+    } else if (condition == "YELLOW") {
+      // Warning (20%): HR 91-115, Normal Sinus, QT 411-445
+      hr = 91.0 + _rng.nextDouble() * 24.0;
+      rhythm = 'Normal Sinus';
+      qt = 411.0 + _rng.nextDouble() * 34.0;
+      status = ScanStatus.clean;
+    } else {
+      // Critical (20%): HR 125-155, Arrhythmia, QT 460-480
+      hr = 125.0 + _rng.nextDouble() * 30.0;
+      final abnormalRhythms = ['Atrial Fibrillation', 'Sinus Tachycardia'];
+      rhythm = abnormalRhythms[_rng.nextInt(abnormalRhythms.length)];
+      qt = 460.0 + _rng.nextDouble() * 20.0;
+      status = ScanStatus.abnormal;
+    }
 
     _ecgResult = EcgResult(
       heartRate: double.parse(hr.toStringAsFixed(1)),
       rhythm: rhythm,
       qtInterval: double.parse(qt.toStringAsFixed(1)),
     );
-
-    final bool isAbnormal =
-        hr < 50 || hr > 120 || rhythm != 'Normal Sinus' || qt > 480;
-
-    _ecgStatus = isAbnormal ? ScanStatus.abnormal : ScanStatus.clean;
+    _ecgStatus = status;
     notifyListeners();
   }
 
@@ -252,22 +297,40 @@ class TriageProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ── 3. BP (Strict MEWS: Systolic > 140 or < 90, Diastolic > 90 or < 60) ──
+  // ── 3. BP (Dataset Bounds: Systolic 110 - 155) ─────────────────────────
   void runBpScan() {
-    final systolic = 80 + _rng.nextInt(81); // 80 to 160
-    final diastolic = 50 + _rng.nextInt(51); // 50 to 100
-    final pulse = 55 + _rng.nextInt(61); // 55 to 115
+    final String condition = _selectWeightedCondition();
+    int systolic;
+    int diastolic;
+    int pulse;
+    ScanStatus status;
+
+    if (condition == "GREEN") {
+      // Normal (60%): Systolic 115-125, Diastolic 75-85
+      systolic = 115 + _rng.nextInt(11);
+      diastolic = 75 + _rng.nextInt(11);
+      pulse = 65 + _rng.nextInt(26);
+      status = ScanStatus.clean;
+    } else if (condition == "YELLOW") {
+      // Warning (20%): Systolic 126-139, Diastolic 86-89
+      systolic = 126 + _rng.nextInt(14);
+      diastolic = 86 + _rng.nextInt(4);
+      pulse = 91 + _rng.nextInt(25);
+      status = ScanStatus.clean;
+    } else {
+      // Critical (20%): Systolic 142-155, Diastolic 92-98
+      systolic = 142 + _rng.nextInt(14);
+      diastolic = 92 + _rng.nextInt(7);
+      pulse = 120 + _rng.nextInt(35);
+      status = ScanStatus.abnormal;
+    }
 
     _bpResult = BpResult(
       systolic: systolic,
       diastolic: diastolic,
       pulseRate: pulse,
     );
-
-    final bool isAbnormal =
-        systolic > 140 || systolic < 90 || diastolic > 90 || diastolic < 60;
-
-    _bpStatus = isAbnormal ? ScanStatus.abnormal : ScanStatus.clean;
+    _bpStatus = status;
     notifyListeners();
   }
 
@@ -277,22 +340,49 @@ class TriageProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ── 4. SpO2 + Temp (Strict MEWS: SpO2 < 90 OR HR < 40 or > 130 OR Temp > 39.0 or < 35.0) ──
+  // ── 4. SpO2 + Temp (Dataset Bounds: SpO2 70-100, HR 65-160, Temp 36.5-38.8) ──
   void runSpo2TempScan() {
-    final spo2 = 85 + _rng.nextInt(16); // 85 to 100
-    final hr = 35 + _rng.nextInt(106); // 35 to 140
-    final temp = 34.5 + _rng.nextDouble() * 5.5; // 34.5 to 40.0
+    final String condition = _selectWeightedCondition();
+    int spo2;
+    int hr;
+    double temp;
+    ScanStatus status;
+
+    if (condition == "GREEN") {
+      // Normal (60%): SpO2 96-100, HR 65-90, Temp 36.5-37.5
+      spo2 = 96 + _rng.nextInt(5);
+      hr = 65 + _rng.nextInt(26);
+      temp = 36.5 + _rng.nextDouble() * 1.0;
+      status = ScanStatus.clean;
+    } else if (condition == "YELLOW") {
+      // Warning (20%): SpO2 92-95, HR 91-115, Temp 37.6-38.2
+      spo2 = 92 + _rng.nextInt(4);
+      hr = 91 + _rng.nextInt(25);
+      temp = 37.6 + _rng.nextDouble() * 0.6;
+      status = ScanStatus.clean;
+    } else {
+      // Critical (20%): Split 50/50 between HR anomaly (10%) and SpO2 anomaly (10%)
+      final bool isHrAnomaly = _rng.nextBool();
+      if (isHrAnomaly) {
+        // HR Anomaly (10% overall): HR 125-155
+        spo2 = 95 + _rng.nextInt(4);
+        hr = 125 + _rng.nextInt(31);
+        temp = 38.3 + _rng.nextDouble() * 0.5;
+      } else {
+        // SpO2 Anomaly (10% overall): SpO2 75-89
+        spo2 = 75 + _rng.nextInt(15);
+        hr = 70 + _rng.nextInt(21);
+        temp = 36.8 + _rng.nextDouble() * 0.7;
+      }
+      status = ScanStatus.abnormal;
+    }
 
     _spo2TempResult = Spo2TempResult(
       spo2: spo2,
       heartRate: hr,
       temperature: double.parse(temp.toStringAsFixed(1)),
     );
-
-    final bool isAbnormal =
-        spo2 < 90 || hr < 40 || hr > 130 || temp > 39.0 || temp < 35.0;
-
-    _spo2TempStatus = isAbnormal ? ScanStatus.abnormal : ScanStatus.clean;
+    _spo2TempStatus = status;
     notifyListeners();
   }
 
@@ -302,18 +392,26 @@ class TriageProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ── 5. Urine Scan (Strict MEWS: Color = "Red" or "Dark Brown") ──
+  // ── 5. Urine Scan (Weighted: 60% Green, 20% Amber, 20% Red/Dark Brown) ──
   void runUrineScan() {
-    final colors = [
-      'Yellow',
-      'Yellow',
-      'Pale Yellow',
-      'Amber',
-      'Red',
-      'Dark Brown',
-    ];
-    final color = colors[_rng.nextInt(colors.length)];
-    final ph = 4.5 + _rng.nextDouble() * 4.5;
+    final String condition = _selectWeightedCondition();
+    String color;
+    ScanStatus status;
+
+    if (condition == "GREEN") {
+      final normalColors = ['Yellow', 'Yellow', 'Pale Yellow'];
+      color = normalColors[_rng.nextInt(normalColors.length)];
+      status = ScanStatus.clean;
+    } else if (condition == "YELLOW") {
+      color = 'Amber';
+      status = ScanStatus.clean;
+    } else {
+      final abnormalColors = ['Red', 'Dark Brown'];
+      color = abnormalColors[_rng.nextInt(abnormalColors.length)];
+      status = ScanStatus.abnormal;
+    }
+
+    final ph = 5.0 + _rng.nextDouble() * 2.5;
     final proteins = ['Negative', 'Negative', 'Trace', 'Positive'];
     final glucoses = ['Negative', 'Negative', 'Trace', 'Positive'];
 
@@ -323,10 +421,7 @@ class TriageProvider extends ChangeNotifier {
       protein: proteins[_rng.nextInt(proteins.length)],
       glucose: glucoses[_rng.nextInt(glucoses.length)],
     );
-
-    final bool isAbnormal = color == 'Red' || color == 'Dark Brown';
-
-    _urineStatus = isAbnormal ? ScanStatus.abnormal : ScanStatus.clean;
+    _urineStatus = status;
     notifyListeners();
   }
 
@@ -374,8 +469,11 @@ class TriageProvider extends ChangeNotifier {
   }
 
   Map<String, dynamic> generateVitalsJsonPayload() {
+    final String activeId = (_patientInfo.id.isEmpty || _patientInfo.id == 'PT-0000' || _patientInfo.id == 'PT-0001')
+        ? 'PT-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}'
+        : _patientInfo.id;
     return {
-      "patient_id": _patientInfo.id.isEmpty ? "PT-0001" : _patientInfo.id,
+      "patient_id": activeId,
       "timestamp": DateTime.now().toIso8601String(),
       "stethoscope_status": _stethStatus.name,
       "ecg_hr": (_ecgResult?.heartRate ?? _stethResult?.heartRate ?? 72.0).toDouble(),
@@ -390,8 +488,11 @@ class TriageProvider extends ChangeNotifier {
   }
 
   Map<String, dynamic> generateTriageJsonPayload() {
+    final String activeId = (_patientInfo.id.isEmpty || _patientInfo.id == 'PT-0000' || _patientInfo.id == 'PT-0001')
+        ? 'PT-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}'
+        : _patientInfo.id;
     return {
-      "patient_id": _patientInfo.id.isEmpty ? "PT-0001" : _patientInfo.id,
+      "patient_id": activeId,
       "timestamp": DateTime.now().toIso8601String(),
       "triage": hasAnyAbnormal ? "RED" : "GREEN",
       "confidence": hasAnyAbnormal ? 0.88 : 0.96,
@@ -405,8 +506,61 @@ class TriageProvider extends ChangeNotifier {
     };
   }
 
-  /// Sends triage data to cloud API. Returns true on success.
+  /// Enforces hard validation rules matching AI training dataset bounds:
+  /// - SpO2: 70 to 100
+  /// - Heart Rate: 65 to 160
+  /// - Systolic BP: 110 to 155
+  /// - Temperature: 36.5 to 38.8
+  ///
+  /// Returns validation error string if out of bounds, or null if valid.
+  static String? validateDatasetBounds({
+    num? spo2,
+    num? heartRate,
+    num? systolicBp,
+    num? temperature,
+  }) {
+    if (spo2 != null && (spo2 < 70 || spo2 > 100)) {
+      return "SpO2 ($spo2%) out of dataset bounds (70 - 100)";
+    }
+    if (heartRate != null && (heartRate < 65 || heartRate > 160)) {
+      return "Heart Rate ($heartRate BPM) out of dataset bounds (65 - 160)";
+    }
+    if (systolicBp != null && (systolicBp < 110 || systolicBp > 155)) {
+      return "Systolic BP ($systolicBp mmHg) out of dataset bounds (110 - 155)";
+    }
+    if (temperature != null && (temperature < 36.5 || temperature > 38.8)) {
+      return "Temperature ($temperature°C) out of dataset bounds (36.5 - 38.8)";
+    }
+    return null;
+  }
+
+  /// Sends triage data to cloud API. Ensures a fresh dynamic ID is generated right before sync.
   Future<bool> syncDataToCloud() async {
+    if (_patientInfo.id.isEmpty || _patientInfo.id == 'PT-0000' || _patientInfo.id == 'PT-0001') {
+      final String freshId = 'PT-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}';
+      _patientInfo = PatientInfo(
+        id: freshId,
+        name: _patientInfo.name,
+        age: _patientInfo.age,
+        gender: _patientInfo.gender,
+        phone: _patientInfo.phone,
+        village: _patientInfo.village,
+      );
+    }
+
+    // Validate hard dataset bounds
+    final String? boundsError = validateDatasetBounds(
+      spo2: _spo2TempResult?.spo2,
+      heartRate: _stethResult?.heartRate ?? _ecgResult?.heartRate ?? _spo2TempResult?.heartRate,
+      systolicBp: _bpResult?.systolic,
+      temperature: _spo2TempResult?.temperature,
+    );
+
+    if (boundsError != null) {
+      debugPrint("⛔ [VALIDATION_ERR] Submission blocked: $boundsError");
+      return false;
+    }
+
     final payload = generateJsonPayload();
     return await ApiService.pushTriageData(payload);
   }

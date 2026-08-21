@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'providers/triage_provider.dart';
-import 'screens/triage_master.dart';
+import 'screens/base.dart';
+import 'screens/hardware_vitals_screen.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const RakshaApp());
 }
 
@@ -24,7 +26,10 @@ class RakshaApp extends StatelessWidget {
           useMaterial3: false,
           scaffoldBackgroundColor: Colors.white,
         ),
-        home: const TriageMaster(),
+        routes: {
+          '/hardware_vitals': (context) => const RakshaHardwareVitalsScreen(),
+        },
+        home: const BaseScreen(),
       ),
     );
   }
