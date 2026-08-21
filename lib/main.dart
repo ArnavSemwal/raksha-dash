@@ -1,36 +1,29 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
-import 'providers/triage_provider.dart';
-import 'screens/base.dart';
-import 'screens/hardware_vitals_screen.dart';
+import 'screens/test_dashboard_screen.dart';
 
 void main() {
-  WidgetsFlutterBinding.ensureInitialized();
   runApp(const RakshaApp());
 }
 
-/// Root Application Widget
+/// Root Application Widget configured for static layout testing.
 class RakshaApp extends StatelessWidget {
   const RakshaApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [ChangeNotifierProvider(create: (_) => TriageProvider())],
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'Raksha Triage App',
-        theme: ThemeData(
-          fontFamily: 'Inter',
-          useMaterial3: false,
-          scaffoldBackgroundColor: Colors.white,
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Raksha Static Test',
+      theme: ThemeData(
+        fontFamily: 'Inter',
+        useMaterial3: true,
+        scaffoldBackgroundColor: Colors.white,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF2563EB),
+          primary: const Color(0xFF2563EB),
         ),
-        routes: {
-          '/hardware_vitals': (context) => const RakshaHardwareVitalsScreen(),
-        },
-        home: const BaseScreen(),
       ),
+      home: const TestDashboardScreen(),
     );
   }
 }
