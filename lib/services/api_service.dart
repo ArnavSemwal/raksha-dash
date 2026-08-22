@@ -1,10 +1,68 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io' show Platform, SocketException;
+import 'dart:io' show Platform, SocketException, HttpException;
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'vitals_model.dart';
+
+/// API Service for Render backend hardware telemetry endpoint
+class RenderApiService {
+  static const String baseUrl = 'https://raksha-sim.onrender.com';
+  static const Duration requestTimeout = Duration(seconds: 35);
+
+  /// Fetches hardware vitals telemetry data from Render cloud backend.
+  static Future<VitalsModel> fetchHardwareVitals({String route = ''}) async {
+    final String cleanRoute = route.isEmpty
+        ? baseUrl
+        : (route.startsWith('/') ? '$baseUrl$route' : '$baseUrl/$route');
+
+    final Uri uri = Uri.parse(cleanRoute);
+
+    try {
+      debugPrint("🚀 [RenderApiService] GET -> $uri");
+      final response = await http
+          .get(
+            uri,
+            headers: {
+              'Accept': 'application/json',
+            },
+          )
+          .timeout(requestTimeout);
+
+      debugPrint("📥 [RenderApiService] StatusCode: ${response.statusCode}");
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> jsonMap =
+            jsonDecode(response.body) as Map<String, dynamic>;
+        debugPrint("✅ [RenderApiService] Successfully parsed VitalsModel");
+        return VitalsModel.fromJson(jsonMap);
+      } else {
+        throw HttpException(
+          'Failed to fetch hardware vitals. HTTP Status: ${response.statusCode}, Body: ${response.body}',
+          uri: uri,
+        );
+      }
+    } on TimeoutException {
+      throw TimeoutException(
+        'Request to $uri timed out after ${requestTimeout.inSeconds} seconds.',
+      );
+    } on SocketException catch (e) {
+      throw SocketException(
+        'Network connection error reaching $uri: ${e.message}',
+      );
+    } on FormatException catch (e) {
+      throw FormatException(
+        'Invalid JSON format received from $uri: ${e.message}',
+      );
+    } catch (e) {
+      debugPrint("❌ [RenderApiService] Exception: $e");
+      rethrow;
+    }
+  }
+}
 
 /// ApiService with smart environment resolution, automatic CORS fallback,
 /// pre-flight JSON audit, typed exception logging, and offline fail-safe caching.
@@ -16,7 +74,7 @@ class ApiService {
 
   // ── PRODUCTION URLS (no trailing slash — prevents double-slash on endpoint append)
   static const String _productionUrl = 'https://raksha-api-71a6.onrender.com';
-  static const String mlEngineUrl    = 'https://raksha-sim.onrender.com';
+  static const String mlEngineUrl = 'https://raksha-sim.onrender.com';
 
   // Request timeout — 35s accounts for Render free-tier cold starts
   static const Duration requestTimeout = Duration(seconds: 35);
@@ -82,8 +140,6 @@ class ApiService {
   }
 
   /// Pushes both Vitals (/vitals) and Triage (/triage) payloads to backend.
-  /// Features automatic endpoint fallback (Render -> Local), pre-flight JSON validation,
-  /// verbose diagnostic logging, and single-point fallback caching.
   static Future<bool> pushTriageData(Map<String, dynamic> payload) async {
     bool vitalsSuccess = false;
     bool triageSuccess = false;
@@ -109,12 +165,12 @@ class ApiService {
           payload.containsKey("triage") && payload["triage"] is Map
               ? Map<String, dynamic>.from(payload["triage"])
               : {
-                "patient_id": payload["patient_id"] ??
-                    'PT-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}',
-                "timestamp": DateTime.now().toIso8601String(),
-                "triage": payload["overall_status"] ?? "GREEN",
-                "confidence": 0.95,
-              };
+                  "patient_id": payload["patient_id"] ??
+                      'PT-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}',
+                  "timestamp": DateTime.now().toIso8601String(),
+                  "triage": payload["overall_status"] ?? "GREEN",
+                  "confidence": 0.95,
+                };
 
       vitalsJson = jsonEncode(vitalsPayload);
       triageJson = jsonEncode(triagePayload);
@@ -140,9 +196,9 @@ class ApiService {
       try {
         vitalsResponse = await _safePost(vitalsUri, vitalsJson);
       } catch (firstErr) {
-        // If primary URL failed (e.g. Render CORS block on web), try local fallback URL
         if (baseUrl != _localUrl) {
-          debugPrint("⚠️ Primary endpoint failed ($firstErr). Attempting local fallback: $_localUrl/vitals");
+          debugPrint(
+              "⚠️ Primary endpoint failed ($firstErr). Attempting local fallback: $_localUrl/vitals");
           vitalsUri = Uri.parse('$_localUrl/vitals');
           vitalsResponse = await _safePost(vitalsUri, vitalsJson);
         } else {
@@ -192,7 +248,8 @@ class ApiService {
         triageResponse = await _safePost(triageUri, triageJson);
       } catch (firstErr) {
         if (baseUrl != _localUrl) {
-          debugPrint("⚠️ Primary endpoint failed ($firstErr). Attempting local fallback: $_localUrl/triage");
+          debugPrint(
+              "⚠️ Primary endpoint failed ($firstErr). Attempting local fallback: $_localUrl/triage");
           triageUri = Uri.parse('$_localUrl/triage');
           triageResponse = await _safePost(triageUri, triageJson);
         } else {
