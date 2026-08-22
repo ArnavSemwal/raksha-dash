@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'providers/triage_provider.dart';
+import 'providers/triage_state.dart';
 import 'screens/base.dart';
 import 'screens/hardware_vitals_screen.dart';
 
@@ -17,7 +18,10 @@ class RakshaApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
-      providers: [ChangeNotifierProvider(create: (_) => TriageProvider())],
+      providers: [
+        ChangeNotifierProvider(create: (_) => TriageProvider()),
+        ChangeNotifierProvider(create: (_) => TriageState()),
+      ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'Raksha Triage App',
