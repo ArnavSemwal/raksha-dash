@@ -142,7 +142,6 @@ class ApiService {
   /// Pushes both Vitals (/vitals) and Triage (/triage) payloads to backend.
   static Future<bool> pushTriageData(Map<String, dynamic> payload) async {
     bool vitalsSuccess = false;
-    bool triageSuccess = false;
 
     debugPrint("════════════════════════════════════════════════════");
     debugPrint(
@@ -151,9 +150,7 @@ class ApiService {
 
     // ── PRE-FLIGHT JSON SERIALIZATION AUDIT ──────────────────────────────────
     Map<String, dynamic> vitalsPayload;
-    Map<String, dynamic> triagePayload;
     String vitalsJson = "";
-    String triageJson = "";
 
     try {
       vitalsPayload =
@@ -161,19 +158,7 @@ class ApiService {
               ? Map<String, dynamic>.from(payload["vitals"])
               : payload;
 
-      triagePayload =
-          payload.containsKey("triage") && payload["triage"] is Map
-              ? Map<String, dynamic>.from(payload["triage"])
-              : {
-                  "patient_id": payload["patient_id"] ??
-                      'PT-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}',
-                  "timestamp": DateTime.now().toIso8601String(),
-                  "triage": payload["overall_status"] ?? "GREEN",
-                  "confidence": 0.95,
-                };
-
       vitalsJson = jsonEncode(vitalsPayload);
-      triageJson = jsonEncode(triagePayload);
       debugPrint(
         "✅ [PREFLIGHT] JSON payload serialization verified successfully.",
       );
@@ -237,70 +222,19 @@ class ApiService {
       debugPrint("Stacktrace: $stack");
     }
 
-    // ── 2. POST /triage ──────────────────────────────────────────────────────
-    try {
-      Uri triageUri = Uri.parse('$baseUrl/triage');
-      debugPrint("🚀 [HTTP_POST] -> $triageUri");
-      debugPrint("📦 Triage Body: $triageJson");
-
-      http.Response triageResponse;
-      try {
-        triageResponse = await _safePost(triageUri, triageJson);
-      } catch (firstErr) {
-        if (baseUrl != _localUrl) {
-          debugPrint(
-              "⚠️ Primary endpoint failed ($firstErr). Attempting local fallback: $_localUrl/triage");
-          triageUri = Uri.parse('$_localUrl/triage');
-          triageResponse = await _safePost(triageUri, triageJson);
-        } else {
-          rethrow;
-        }
-      }
-
-      debugPrint(
-        "📥 [HTTP_RESP] /triage StatusCode: ${triageResponse.statusCode}",
-      );
-      debugPrint("📥 [Response] /triage Body: ${triageResponse.body}");
-
-      if (triageResponse.statusCode == 200 ||
-          triageResponse.statusCode == 201) {
-        triageSuccess = true;
-        debugPrint("✅ [SUCCESS] /triage sync acknowledged by backend.");
-      } else {
-        debugPrint(
-          "⚠️ [HTTP_WARN] /triage rejected with Status ${triageResponse.statusCode}: ${triageResponse.body}",
-        );
-      }
-    } on TimeoutException catch (e) {
-      debugPrint(
-        "⏰ [TIMEOUT_ERR] /triage request timed out after ${requestTimeout.inSeconds}s: $e",
-      );
-    } on SocketException catch (e) {
-      debugPrint("🔌 [NET_ERR] /triage SocketException: $e");
-    } on FormatException catch (e) {
-      debugPrint("📄 [FORMAT_ERR] /triage Bad response format: $e");
-    } catch (e, stack) {
-      debugPrint(
-        "❌ [CORS/HTTP_ERR] /triage Exception (${e.runtimeType}): $e",
-      );
-      debugPrint("Stacktrace: $stack");
-    }
-
-    final bool overallSuccess = vitalsSuccess && triageSuccess;
-
     // ── SINGLE-SOURCE OFFLINE CACHING FALLBACK ───────────────────────────────
-    if (!overallSuccess) {
+    if (!vitalsSuccess) {
       debugPrint(
-        "⚠️ [SYNC_FAILED] Overall sync incomplete (vitals: $vitalsSuccess, triage: $triageSuccess). Caching payload locally.",
+        "⚠️ [SYNC_FAILED] /vitals sync failed. Caching payload locally.",
       );
       await cacheFailedPayload(payload);
     } else {
       debugPrint(
-        "🎉 [SYNC_COMPLETE] Both /vitals and /triage successfully synced to backend.",
+        "🎉 [SYNC_COMPLETE] /vitals successfully synced to backend.",
       );
     }
 
     debugPrint("════════════════════════════════════════════════════");
-    return overallSuccess;
+    return vitalsSuccess;
   }
 }

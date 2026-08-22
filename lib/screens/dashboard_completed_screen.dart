@@ -1,23 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../models/vitals_model.dart';
 import '../providers/triage_state.dart';
-import '../services/raspi_api_service.dart';
 import '../widgets/app_header.dart';
 import 'telemetry_sync_screen.dart';
 import 'triage_result_screen.dart';
 
-/// Native Flutter implementation of Dashboard 1 (Empty State - RAW VITALS).
+/// Native Flutter implementation of Dashboard 2 (Completed State - RAW VITALS).
 /// Mobile-constrained layout matching original HTML/CSS design specification.
-class RakshaHardwareVitalsScreen extends StatelessWidget {
-  final VoidCallback? onExecuteTriage;
+class DashboardCompletedScreen extends StatelessWidget {
+  const DashboardCompletedScreen({super.key});
 
-  const RakshaHardwareVitalsScreen({
-    super.key,
-    this.onExecuteTriage,
-  });
-
-  // Color constants matching Dashboard 1 HTML/CSS specification
   static const Color _surfaceContainerLow = Color(0xFFF6F3F2);
   static const Color _surfaceContainerLowest = Color(0xFFFFFFFF);
   static const Color _primaryCobalt = Color(0xFF004AC6);
@@ -26,6 +18,8 @@ class RakshaHardwareVitalsScreen extends StatelessWidget {
   static const Color _outline = Color(0xFF737686);
   static const Color _outlineVariant = Color(0xFFC3C6D7);
   static const Color _borderGray = Color(0xFFE5E7EB);
+
+  // Completed state green colors matching HTML spec (#DFF5E1 & #34A853)
   static const Color _completedBg = Color(0xFFDFF5E1);
   static const Color _completedGreen = Color(0xFF34A853);
 
@@ -34,23 +28,6 @@ class RakshaHardwareVitalsScreen extends StatelessWidget {
       context,
       MaterialPageRoute(
         builder: (context) => DynamicTestLoaderScreen(testType: type),
-      ),
-    );
-  }
-
-  Future<void> _handleExecuteTriage(BuildContext context) async {
-    if (onExecuteTriage != null) {
-      onExecuteTriage!();
-      return;
-    }
-
-    final VitalsModel? result = await RaspiApiService.getTriageResult();
-    if (!context.mounted) return;
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => TriageResultScreen(vitals: result),
       ),
     );
   }
@@ -97,7 +74,7 @@ class RakshaHardwareVitalsScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 12),
 
-                          // GRID LAYOUT (Vitals Cards)
+                          // GRID LAYOUT (Completed + Pending State Vitals Cards)
                           Expanded(
                             child: Column(
                               children: [
@@ -106,21 +83,25 @@ class RakshaHardwareVitalsScreen extends StatelessWidget {
                                   child: Row(
                                     children: [
                                       Expanded(
-                                        child: _buildCard(
+                                        child: _buildVitalCard(
                                           isCompleted: triageState.isCompleted(VitalTestType.spo2),
-                                          icon: Icons.air,
+                                          icon: triageState.isCompleted(VitalTestType.spo2)
+                                              ? Icons.check_circle
+                                              : Icons.air,
                                           title: 'SPO2',
-                                          sensor: 'SENSOR: MAX30102',
+                                          subtitle: 'Tap to retake Test',
                                           onTap: () => _navigateToTest(context, VitalTestType.spo2),
                                         ),
                                       ),
                                       const SizedBox(width: 8),
                                       Expanded(
-                                        child: _buildCard(
+                                        child: _buildVitalCard(
                                           isCompleted: triageState.isCompleted(VitalTestType.hr),
-                                          icon: Icons.monitor_heart,
+                                          icon: triageState.isCompleted(VitalTestType.hr)
+                                              ? Icons.check_circle
+                                              : Icons.monitor_heart,
                                           title: 'HR',
-                                          sensor: 'SENSOR: MAX30102',
+                                          subtitle: 'Tap to retake Test',
                                           onTap: () => _navigateToTest(context, VitalTestType.hr),
                                         ),
                                       ),
@@ -134,21 +115,25 @@ class RakshaHardwareVitalsScreen extends StatelessWidget {
                                   child: Row(
                                     children: [
                                       Expanded(
-                                        child: _buildCard(
+                                        child: _buildVitalCard(
                                           isCompleted: triageState.isCompleted(VitalTestType.temp),
-                                          icon: Icons.thermostat,
+                                          icon: triageState.isCompleted(VitalTestType.temp)
+                                              ? Icons.check_circle
+                                              : Icons.thermostat,
                                           title: 'TEMP',
-                                          sensor: 'SENSOR: MLX90614',
+                                          subtitle: 'Tap to retake Test',
                                           onTap: () => _navigateToTest(context, VitalTestType.temp),
                                         ),
                                       ),
                                       const SizedBox(width: 8),
                                       Expanded(
-                                        child: _buildCard(
+                                        child: _buildVitalCard(
                                           isCompleted: triageState.isCompleted(VitalTestType.urine),
-                                          icon: Icons.science,
+                                          icon: triageState.isCompleted(VitalTestType.urine)
+                                              ? Icons.check_circle
+                                              : Icons.science,
                                           title: 'URINE',
-                                          sensor: 'SENSOR: STRIP-READER',
+                                          subtitle: 'Tap to retake Test',
                                           onTap: () => _navigateToTest(context, VitalTestType.urine),
                                         ),
                                       ),
@@ -159,11 +144,13 @@ class RakshaHardwareVitalsScreen extends StatelessWidget {
 
                                 // Row 3: STETHOSCOPE (Full Width)
                                 Expanded(
-                                  child: _buildCard(
+                                  child: _buildVitalCard(
                                     isCompleted: triageState.isCompleted(VitalTestType.stethoscope),
-                                    icon: Icons.medical_services_outlined,
+                                    icon: triageState.isCompleted(VitalTestType.stethoscope)
+                                        ? Icons.check_circle
+                                        : Icons.medical_services_outlined,
                                     title: 'STETHOSCOPE',
-                                    sensor: 'SENSOR: PIEZO-MIC',
+                                    subtitle: 'Tap to retake Test',
                                     onTap: () => _navigateToTest(context, VitalTestType.stethoscope),
                                   ),
                                 ),
@@ -229,7 +216,14 @@ class RakshaHardwareVitalsScreen extends StatelessWidget {
                     child: SizedBox(
                       height: 60.0,
                       child: ElevatedButton.icon(
-                        onPressed: isReady ? () => _handleExecuteTriage(context) : null,
+                        onPressed: isReady
+                            ? () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const TriageResultScreen()),
+                                );
+                              }
+                            : null,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: _primaryCobalt,
                           foregroundColor: Colors.white,
@@ -263,12 +257,12 @@ class RakshaHardwareVitalsScreen extends StatelessWidget {
     );
   }
 
-  /// Helper to build Vital Card matching HTML spec with tap interaction
-  Widget _buildCard({
+  /// Helper to build Completed or Pending Vital Card matching HTML spec
+  Widget _buildVitalCard({
     required bool isCompleted,
     required IconData icon,
     required String title,
-    required String sensor,
+    required String subtitle,
     required VoidCallback onTap,
   }) {
     return InkWell(
@@ -287,7 +281,7 @@ class RakshaHardwareVitalsScreen extends StatelessWidget {
             Align(
               alignment: Alignment.topRight,
               child: Icon(
-                isCompleted ? Icons.check_circle : icon,
+                icon,
                 color: isCompleted ? _completedGreen : _outline,
                 size: 24,
               ),
@@ -305,32 +299,20 @@ class RakshaHardwareVitalsScreen extends StatelessWidget {
                 ),
               ),
             ),
-            isCompleted
-                ? const Text(
-                    'Tap to retake Test',
-                    style: TextStyle(
-                      fontFamily: 'Space Mono',
-                      fontSize: 10,
-                      color: _completedGreen,
-                      letterSpacing: 1.2,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  )
-                : Visibility(
-                    visible: false,
-                    maintainSize: true,
-                    maintainAnimation: true,
-                    maintainState: true,
-                    child: Text(
-                      sensor,
-                      style: const TextStyle(
-                        fontFamily: 'Space Mono',
-                        fontSize: 10,
-                        color: _outline,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                  ),
+            Opacity(
+              opacity: isCompleted ? 1.0 : 0.0,
+              child: Text(
+                subtitle,
+                style: TextStyle(
+                  fontFamily: 'Space Mono',
+                  fontSize: 10,
+                  color: isCompleted ? _completedGreen : _outline,
+                  letterSpacing: 1.2,
+                  fontWeight: isCompleted ? FontWeight.w700 : FontWeight.w400,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
           ],
         ),
       ),

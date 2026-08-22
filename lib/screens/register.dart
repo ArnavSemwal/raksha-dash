@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'telemetry_sync_screen.dart';
+import '../services/raspi_api_service.dart';
+import '../widgets/app_header.dart';
+import 'hardware_vitals_screen.dart';
 
 /// Converts the HTML/Tailwind layout completely into a single stateful Flutter Widget.
 class RakshaPatientRegistrationScreen extends StatefulWidget {
@@ -59,6 +61,7 @@ class _RakshaPatientRegistrationScreenState
       body: SafeArea(
         child: Column(
           children: [
+            const AppHeader(),
             // Main Content Area
             Expanded(
               child: SingleChildScrollView(
@@ -367,13 +370,14 @@ class _RakshaPatientRegistrationScreenState
           height: 56.0,
           child: ElevatedButton(
             onPressed: () {
+              RaspiApiService.initSession(patientId: widget.patientId);
               if (widget.onProceedPressed != null) {
                 widget.onProceedPressed!();
               } else {
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const TelemetrySyncScreen(),
+                    builder: (context) => const RakshaHardwareVitalsScreen(),
                   ),
                 );
               }

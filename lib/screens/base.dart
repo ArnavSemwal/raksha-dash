@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/app_header.dart';
 import 'register.dart';
 
 /// Alias for BaseScreen to match linear routing terminology
@@ -80,35 +81,7 @@ class RakshaTriageHomeScreen extends StatelessWidget {
 
   /// Builds the top fixed App Bar containing the Raksha Shield icon and title
   Widget _buildTopAppBar() {
-    return Container(
-      height: 64.0,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: borderGray, width: 1.0)),
-      ),
-      child: Center(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CustomPaint(
-              size: const Size(22, 24),
-              painter: _RakshaShieldHeaderPainter(color: darkCharcoal),
-            ),
-            const SizedBox(width: 10),
-            const Text(
-              'Raksha',
-              style: TextStyle(
-                color: darkCharcoal,
-                fontFamily: 'Inter',
-                fontSize: 24,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.5,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    return const AppHeader();
   }
 
   /// Builds the center healthcare medical cross + ECG line hero graphic
@@ -233,59 +206,6 @@ class RakshaTriageHomeScreen extends StatelessWidget {
     );
   }
 }
-
-/// CustomPainter for the Header Shield Icon Logo
-class _RakshaShieldHeaderPainter extends CustomPainter {
-  final Color color;
-
-  _RakshaShieldHeaderPainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Paint strokePaint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-
-    final double w = size.width;
-    final double h = size.height;
-
-    // Shield Contour
-    final Path shieldPath = Path();
-    shieldPath.moveTo(w * 0.5, 0);
-    shieldPath.lineTo(w, h * 0.22);
-    shieldPath.lineTo(w, h * 0.52);
-    shieldPath.cubicTo(w, h * 0.82, w * 0.5, h, w * 0.5, h);
-    shieldPath.cubicTo(w * 0.5, h, 0, h * 0.82, 0, h * 0.52);
-    shieldPath.lineTo(0, h * 0.22);
-    shieldPath.close();
-
-    canvas.drawPath(shieldPath, strokePaint);
-
-    // Inner Medical Plus Cross
-    final double cx = w * 0.5;
-    final double cy = h * 0.48;
-    final double crossRadius = w * 0.22;
-
-    canvas.drawLine(
-      Offset(cx - crossRadius, cy),
-      Offset(cx + crossRadius, cy),
-      strokePaint..strokeWidth = 2.0,
-    );
-    canvas.drawLine(
-      Offset(cx, cy - crossRadius),
-      Offset(cx, cy + crossRadius),
-      strokePaint..strokeWidth = 2.0,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _RakshaShieldHeaderPainter oldDelegate) =>
-      oldDelegate.color != color;
-}
-
 /// CustomPainter that renders a vector line outline of a Medical Cross with ECG Pulse Wave
 class _MedicalPulseCrossPainter extends CustomPainter {
   final Color color;
