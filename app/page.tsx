@@ -8,7 +8,7 @@ export default function Dashboard() {
   const fetchData = async () => {
     try {
       // REPLACE THIS URL WITH YOUR LIVE RENDER URL
-      const response = await fetch("https://raksha-sim.onrender.com/patients");
+      const response = await fetch("https://raksha-api-71a6.onrender.com/patients?limit=50");
       const data = await response.json();
       setPatients(data);
     } catch (error) {

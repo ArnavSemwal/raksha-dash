@@ -1,60 +1,36 @@
-# 🛡️ Raksha - Mobile Medical Triage App
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-Raksha is a high-fidelity, pixel-perfect mobile medical triage application built with Flutter, designed to assist healthcare workers in rural India. It captures patient registration info, processes vital readings (Stethoscope, ECG, Blood Pressure, SpO2 & Temp, Urine analysis), performs clinical risk scoring, and syncs data to the cloud.
+## Getting Started
 
----
+First, run the development server:
 
-## 👨‍💻 Key Contributions by Arnav Semwal
-
-Arnav Semwal has driven the core full-stack, DevOps, and ML orchestration architecture of this project:
-
-### 1. ⚙️ End-to-End Local Simulation Blueprint
-- Conceived, designed, and implemented the local multi-tiered monorepo environment: **Flutter App ➔ Backend API ➔ AI Engine (raksha-sim)**.
-- Mapped out separate uvicorn ports (8000 for Backend, 8001 for ML Engine) to run the full pipeline locally with SQLite persistence.
-
-### 2. 🧠 AI & ML Engine Orchestration
-- Created backend endpoints allowing Python ML inference scripts to accept vital metrics, evaluate MEWS (Modified Early Warning Score) clinical thresholds, and return real-time prediction and risk alerts.
-- Configured backend routing to transparently forward `/vitals` payloads to the ML engine and append risk outputs to patient records.
-
-### 3. 🌐 Permissive CORS Integration
-- Integrated custom `CORSMiddleware` in FastAPI servers to allow cross-origin requests from Flutter Web, Mobile, and Android Emulators during dry run testing, bypassing browser sandbox restrictions.
-
-### 4. 📝 Patient Registration State Binding
-- Replaced non-functional dummy visual controls in the Registration UI with a functional `DropdownButtonFormField` for Gender selection ('Male', 'Female', 'Other').
-- Bound values directly to `TriageProvider` patient state to flow seamlessly into API payloads.
-
-### 5. 💾 Safely-Isolated Offline Caching (Sync Fail-Safe)
-- Integrated `shared_preferences` to persist un-synced patient data locally in case of network failures or server outages.
-- Upgraded HTTP catches to write directly to offline cache without modifying successful inline execution paths, guaranteeing zero patient data loss.
-
----
-
-## 🚀 Setup & Execution Runbook
-
-To run the local simulation stack, open three terminal windows:
-
-### 1. Launch the AI / ML Engine (Port 8001)
-```powershell
-cd raksha-sim
-python -m uvicorn ml_engine:app --host 127.0.0.1 --port 8001 --reload
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
-### 2. Launch the Backend API Gateway (Port 8000)
-```powershell
-cd raksha-sim
-python -m uvicorn main:app --host 127.0.0.1 --port 8000 --reload
-```
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-### 3. Launch the Flutter App
-```powershell
-cd raksha_app
-flutter run -d chrome
-```
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
----
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-## 📡 Backend API Specs
+## Learn More
 
-- **`POST /vitals`**: Persists metrics and queries local ML Engine for risk assessment.
-- **`POST /triage`**: Persists overall patient triage status.
-- **`GET /patients`**: Returns the list of all registered patients.
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
