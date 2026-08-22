@@ -53,6 +53,7 @@ class UrineSensorData {
 }
 
 class StethoscopeData {
+  /// Placeholder 0 values for stethoscope stats (rms/min/max/samples) until real DSP integration
   final int rms;
   final int min;
   final int max;
@@ -131,8 +132,10 @@ class PulseOximeterData {
 
 /// Root Hardware Vitals Model mapping strictly to telemetry JSON schema
 class VitalsModel {
+  final String patientId;
   final String deviceId;
   final String timestamp;
+  final String patientSpeechText;
   final EcgData ecg;
   final UrineSensorData urineSensor;
   final StethoscopeData stethoscope;
@@ -141,8 +144,10 @@ class VitalsModel {
   final String status;
 
   const VitalsModel({
-    this.deviceId = '',
+    this.patientId = '',
+    this.deviceId = 'RASPI-001',
     this.timestamp = '',
+    this.patientSpeechText = '',
     this.ecg = const EcgData(),
     this.urineSensor = const UrineSensorData(),
     this.stethoscope = const StethoscopeData(),
@@ -154,8 +159,10 @@ class VitalsModel {
   factory VitalsModel.fromJson(Map<String, dynamic>? json) {
     if (json == null) return const VitalsModel();
     return VitalsModel(
-      deviceId: json['device_id']?.toString() ?? '',
+      patientId: json['patient_id']?.toString() ?? '',
+      deviceId: json['device_id']?.toString() ?? 'RASPI-001',
       timestamp: json['timestamp']?.toString() ?? '',
+      patientSpeechText: json['patient_speech_text']?.toString() ?? '',
       ecg: EcgData.fromJson(json['ecg'] as Map<String, dynamic>?),
       urineSensor:
           UrineSensorData.fromJson(json['urine_sensor'] as Map<String, dynamic>?),
@@ -170,8 +177,10 @@ class VitalsModel {
   }
 
   Map<String, dynamic> toJson() => {
+        'patient_id': patientId,
         'device_id': deviceId,
         'timestamp': timestamp,
+        'patient_speech_text': patientSpeechText,
         'ecg': ecg.toJson(),
         'urine_sensor': urineSensor.toJson(),
         'stethoscope': stethoscope.toJson(),

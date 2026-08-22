@@ -11,16 +11,12 @@ class PatientProvider extends ChangeNotifier {
   double heartRate = 75.0;
   double spo2 = 98.0;
   double temperature = 36.8;
-  int systolicBP = 120;
-  int diastolicBP = 80;
 
   // 3. Update Vitals function
-  void updateVitals({double? hr, double? s, double? temp, int? sys, int? dia}) {
+  void updateVitals({double? hr, double? s, double? temp}) {
     if (hr != null) heartRate = hr;
     if (s != null) spo2 = s;
     if (temp != null) temperature = temp;
-    if (sys != null) systolicBP = sys;
-    if (dia != null) diastolicBP = dia;
     notifyListeners(); // UI ko batayega ki data change ho gaya hai, refresh maro!
   }
 

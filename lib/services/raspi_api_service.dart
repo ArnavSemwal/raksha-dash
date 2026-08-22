@@ -60,22 +60,8 @@ class RaspiApiService {
         return vitals;
       }
 
-      // Safe fallback if cloud is cold-starting: construct a valid model
-      debugPrint('ℹ️ [RaspiApiService] Returning calibrated local AI triage result fallback.');
-      return VitalsModel(
-        patientId: patientId ?? 'RX-2049',
-        timestamp: DateTime.now().toIso8601String(),
-        stethoscopeStatus: 'clear',
-        ecgHr: 72.0,
-        bpSys: 120.0,
-        bpDia: 80.0,
-        spo2: 98.0,
-        temperature: 98.6,
-        urineRgb: [255.0, 255.0, 0.0],
-        patientSpeechText: 'All vitals within normal parameters.',
-        triage: 'LOW RISK (STABLE)',
-        confidence: 0.94,
-      );
+      debugPrint('⚠️ [RaspiApiService] Failed to fetch AI triage computation from hardware/cloud.');
+      return null;
     } catch (e) {
       debugPrint('❌ [RaspiApiService] Error getting triage result: $e');
       return null;

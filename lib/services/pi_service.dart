@@ -3,28 +3,31 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import '../config/app_config.dart';
 
-/// Handles local Wi-Fi HTTP calls to the Raspberry Pi hardware controller.
-/// Enforces lightweight boolean status responses and strict 15-second timeouts.
+/// Handles local Wi-Fi HTTP calls to the ESP32 / Raspberry Pi hardware controller.
+/// Enforces per-sensor timeouts and lightweight boolean status responses.
 class PiService {
   final String baseUrl;
   final http.Client _client;
 
-  /// Strict 15-second timeout duration for local hardware network calls.
-  static const Duration timeoutDuration = Duration(seconds: 15);
-
   PiService({
-    this.baseUrl = 'http://192.168.4.1:5000',
+    String? baseUrl,
     http.Client? client,
-  }) : _client = client ?? http.Client();
+  })  : baseUrl = baseUrl ?? AppConfig.hardwareBaseUrl,
+        _client = client ?? http.Client();
 
-  /// Internal helper to execute HTTP calls with a 15-second timeout.
+  /// Internal helper to execute HTTP calls with a sensor-specific timeout.
   /// Returns `true` if response is HTTP 200/201 or contains `{ "status": "ok" }`.
   /// On any error or timeout, catches the exception and returns `false`.
-  Future<bool> _safeTrigger(String endpoint, {Map<String, dynamic>? body}) async {
+  Future<bool> _safeTrigger(
+    String endpoint, {
+    Map<String, dynamic>? body,
+    Duration timeout = const Duration(seconds: 5),
+  }) async {
     try {
       final uri = Uri.parse('$baseUrl$endpoint');
-      debugPrint('🚀 [PiService] Sending hardware trigger to: $uri');
+      debugPrint('🚀 [PiService] Sending hardware trigger to: $uri (timeout: ${timeout.inSeconds}s)');
 
       final response = body != null
           ? await _client
@@ -33,10 +36,10 @@ class PiService {
                 headers: {'Content-Type': 'application/json'},
                 body: jsonEncode(body),
               )
-              .timeout(timeoutDuration)
+              .timeout(timeout)
           : await _client
               .get(uri)
-              .timeout(timeoutDuration);
+              .timeout(timeout);
 
       debugPrint(
         '📥 [PiService] Response ($endpoint) -> Code: ${response.statusCode}, Body: ${response.body}',
@@ -56,12 +59,12 @@ class PiService {
       return false;
     } on TimeoutException catch (e) {
       debugPrint(
-        '⏰ [PiService] Timeout on $endpoint (15s limit exceeded): $e',
+        '⏰ [PiService] Timeout on $endpoint (${timeout.inSeconds}s limit exceeded): $e',
       );
       return false;
     } on SocketException catch (e) {
       debugPrint(
-        '🔌 [PiService] SocketException on $endpoint (Pi unreachable): $e',
+        '🔌 [PiService] SocketException on $endpoint (Hardware unreachable): $e',
       );
       return false;
     } catch (e, stack) {
@@ -70,7 +73,7 @@ class PiService {
     }
   }
 
-  /// Notifies the Pi that a new patient session is initialized.
+  /// Notifies the hardware controller that a new patient session is initialized.
   Future<bool> initSession({String? patientId}) async {
     return await _safeTrigger(
       '/init_session',
@@ -78,35 +81,36 @@ class PiService {
         'patient_id': patientId ?? 'PT-${DateTime.now().millisecondsSinceEpoch}',
         'timestamp': DateTime.now().toIso8601String(),
       },
+      timeout: const Duration(seconds: 5),
     );
   }
 
-  /// Triggers local ECG reading on the Pi.
+  /// Triggers local ECG reading (AD8232 - 5s timeout).
   Future<bool> triggerEcg() async {
-    return await _safeTrigger('/trigger/ecg');
+    return await _safeTrigger('/trigger/ecg', timeout: AppConfig.ecgTimeout);
   }
 
-  /// Triggers local Body Temperature reading on the Pi.
+  /// Triggers local Body Temperature reading (MLX90614 - 2s timeout).
   Future<bool> triggerTemp() async {
-    return await _safeTrigger('/trigger/temp');
+    return await _safeTrigger('/trigger/temp', timeout: AppConfig.temperatureTimeout);
   }
 
-  /// Triggers local Urine Analysis strip reading on the Pi.
+  /// Triggers local Urine Analysis strip reading (TCS3200 - 3s timeout).
   Future<bool> triggerUrine() async {
-    return await _safeTrigger('/trigger/urine');
+    return await _safeTrigger('/trigger/urine', timeout: AppConfig.urineTimeout);
   }
 
-  /// Triggers local Stethoscope auscultation on the Pi.
+  /// Triggers local Stethoscope auscultation (MAX4466 - 5s timeout).
   Future<bool> triggerStethoscope() async {
-    return await _safeTrigger('/trigger/stethoscope');
+    return await _safeTrigger('/trigger/stethoscope', timeout: AppConfig.stethoscopeTimeout);
   }
 
-  /// Triggers local SpO2 reading on the Pi.
+  /// Triggers local SpO2 reading (MAX30102 - 12s timeout).
   Future<bool> triggerSpo2() async {
-    return await _safeTrigger('/trigger/spo2');
+    return await _safeTrigger('/trigger/spo2', timeout: AppConfig.pulseOximeterTimeout);
   }
 
-  /// Commands the Pi to upload its aggregated local sensor payload to Render cloud.
+  /// Commands the hardware controller to upload its aggregated local sensor payload.
   Future<bool> finalizeTriage({String? patientId}) async {
     final Map<String, dynamic> payload = {
       'timestamp': DateTime.now().toIso8601String(),
@@ -117,6 +121,7 @@ class PiService {
     return await _safeTrigger(
       '/finalize_triage',
       body: payload,
+      timeout: const Duration(seconds: 15),
     );
   }
 }

@@ -1,11 +1,10 @@
+// DATA_SOURCE: https://raksha-sim-1.onrender.com
 /// Strongly typed model representing complete patient vitals and triage results.
 class VitalsModel {
   final String patientId;
   final String timestamp;
   final String stethoscopeStatus;
   final double ecgHr;
-  final double bpSys;
-  final double bpDia;
   final double spo2;
   final double temperature;
   final List<double> urineRgb;
@@ -18,8 +17,6 @@ class VitalsModel {
     required this.timestamp,
     required this.stethoscopeStatus,
     required this.ecgHr,
-    required this.bpSys,
-    required this.bpDia,
     required this.spo2,
     required this.temperature,
     required this.urineRgb,
@@ -50,8 +47,6 @@ class VitalsModel {
           (data['stethoscope_status'] ?? json['stethoscope_status'] ?? 'clean')
               .toString(),
       ecgHr: ((data['ecg_hr'] ?? json['ecg_hr'] ?? 72.0) as num).toDouble(),
-      bpSys: ((data['bp_sys'] ?? json['bp_sys'] ?? 120.0) as num).toDouble(),
-      bpDia: ((data['bp_dia'] ?? json['bp_dia'] ?? 80.0) as num).toDouble(),
       spo2: ((data['spo2'] ?? json['spo2'] ?? 98.0) as num).toDouble(),
       temperature:
           ((data['temperature'] ?? json['temperature'] ?? 36.8) as num)
@@ -74,8 +69,6 @@ class VitalsModel {
       'timestamp': timestamp,
       'stethoscope_status': stethoscopeStatus,
       'ecg_hr': ecgHr,
-      'bp_sys': bpSys,
-      'bp_dia': bpDia,
       'spo2': spo2,
       'temperature': temperature,
       'urine_rgb': urineRgb,

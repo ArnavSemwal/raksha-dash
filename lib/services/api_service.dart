@@ -73,7 +73,7 @@ class ApiService {
   static const bool useLocalServer = false;
 
   // ── PRODUCTION URLS (no trailing slash — prevents double-slash on endpoint append)
-  static const String _productionUrl = 'https://raksha-api-71a6.onrender.com';
+  static const String _productionUrl = 'https://raksha-api-7ie6.onrender.com';
   static const String mlEngineUrl = 'https://raksha-sim.onrender.com';
 
   // Request timeout — 35s accounts for Render free-tier cold starts
@@ -139,7 +139,7 @@ class ApiService {
         .timeout(requestTimeout);
   }
 
-  /// Pushes both Vitals (/vitals) and Triage (/triage) payloads to backend.
+  /// Pushes Vitals telemetry payload to backend (POST /vitals).
   static Future<bool> pushTriageData(Map<String, dynamic> payload) async {
     bool vitalsSuccess = false;
 
@@ -148,6 +148,7 @@ class ApiService {
       "🌐 STARTING CLOUD SYNC TO: $baseUrl (LocalServer: $useLocalServer)",
     );
 
+    // DATA_SOURCE: https://raksha-sim-1.onrender.com
     // ── PRE-FLIGHT JSON SERIALIZATION AUDIT ──────────────────────────────────
     Map<String, dynamic> vitalsPayload;
     String vitalsJson = "";
@@ -220,6 +221,24 @@ class ApiService {
         "❌ [CORS/HTTP_ERR] /vitals Exception (${e.runtimeType}): $e",
       );
       debugPrint("Stacktrace: $stack");
+    }
+
+    // ── 2. POST /triage (if triage payload is provided) ─────────────────────
+    if (payload.containsKey("triage") && payload["triage"] is Map) {
+      try {
+        final triagePayload = Map<String, dynamic>.from(payload["triage"]);
+        final triageJson = jsonEncode(triagePayload);
+        Uri triageUri = Uri.parse('$baseUrl/triage');
+        debugPrint("🚀 [HTTP_POST] -> $triageUri");
+        debugPrint("📦 Triage Body: $triageJson");
+
+        final triageResponse = await _safePost(triageUri, triageJson);
+        debugPrint(
+          "📥 [HTTP_RESP] /triage StatusCode: ${triageResponse.statusCode}",
+        );
+      } catch (e) {
+        debugPrint("⚠️ [HTTP_WARN] /triage payload dispatch warning: $e");
+      }
     }
 
     // ── SINGLE-SOURCE OFFLINE CACHING FALLBACK ───────────────────────────────

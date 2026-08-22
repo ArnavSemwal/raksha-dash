@@ -5,6 +5,7 @@ import '../providers/triage_provider.dart';
 import '../providers/triage_state.dart';
 import '../services/raspi_api_service.dart';
 import '../widgets/app_header.dart';
+import 'hardware_vitals_screen.dart';
 import 'dashboard_completed_screen.dart';
 
 /// Configuration data model representing loading information for a specific vital test.
@@ -37,7 +38,6 @@ class _DynamicTestLoaderScreenState extends State<DynamicTestLoaderScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _pulseController;
   late final Animation<double> _scaleAnimation;
-  Timer? _pollingTimer;
   final int _factIndex = 0;
 
   /// Retrieves test-specific loading configuration according to spec.
@@ -131,12 +131,11 @@ class _DynamicTestLoaderScreenState extends State<DynamicTestLoaderScreen>
 
   Future<void> _startHardwareTest() async {
     // Fire the hardware test via the central RaspiApiService hub
-    RaspiApiService.triggerTest(widget.testType);
+    final bool success = await RaspiApiService.triggerTest(widget.testType);
 
-    // Hardware round-trip polling delay (RasPi -> ESP -> RasPi)
-    _pollingTimer = Timer(const Duration(milliseconds: 2400), () {
-      if (!mounted) return;
+    if (!mounted) return;
 
+    if (success) {
       // Update state in TriageState and TriageProvider
       final triageState = Provider.of<TriageState>(context, listen: false);
       triageState.markCompleted(widget.testType);
@@ -145,17 +144,17 @@ class _DynamicTestLoaderScreenState extends State<DynamicTestLoaderScreen>
       switch (widget.testType) {
         case VitalTestType.spo2:
         case VitalTestType.temp:
-          triageProvider.runSpo2TempScan();
+          triageProvider.applySpo2TempData();
           break;
         case VitalTestType.hr:
-          triageProvider.runEcgScan();
+          triageProvider.applyEcgData();
           break;
         case VitalTestType.urine:
-          triageProvider.runUrineScan();
+          triageProvider.applyUrineData();
           break;
         case VitalTestType.stethoscope:
         case VitalTestType.voice:
-          triageProvider.runStethScan();
+          triageProvider.applyStethData();
           break;
       }
 
@@ -166,12 +165,24 @@ class _DynamicTestLoaderScreenState extends State<DynamicTestLoaderScreen>
           builder: (context) => const DashboardCompletedScreen(),
         ),
       );
-    });
+    } else {
+      // On failure or timeout: return to main dashboard with sensor unchecked
+      debugPrint('⚠️ [DynamicTestLoader] Sensor read failed/timed out for ${widget.testType}. Returning to dashboard.');
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const RakshaHardwareVitalsScreen(),
+          ),
+        );
+      }
+    }
   }
 
   @override
   void dispose() {
-    _pollingTimer?.cancel();
     _pulseController.dispose();
     super.dispose();
   }
