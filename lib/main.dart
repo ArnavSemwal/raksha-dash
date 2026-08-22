@@ -33,7 +33,7 @@ class RakshaApp extends StatelessWidget {
         routes: {
           '/hardware_vitals': (context) => const RakshaHardwareVitalsScreen(),
         },
-        home: const BaseScreen(),
+        home: const RakshaHardwareVitalsScreen(),
       ),
     );
   }

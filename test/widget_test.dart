@@ -8,6 +8,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:raksha_app/main.dart';
+import 'package:raksha_app/screens/hardware_vitals_screen.dart';
 
 void main() {
   testWidgets('RakshaApp smoke test renders home screen',
@@ -15,10 +16,8 @@ void main() {
     await tester.pumpWidget(const RakshaApp());
     await tester.pump();
 
-    // Verify Raksha brand header is rendered
-    expect(find.text('Raksha'), findsWidgets);
-    // Verify Start New Patient Check button is rendered
-    expect(find.text('Start New Patient Check'), findsOneWidget);
+    // Verify it renders
+    expect(find.byType(RakshaHardwareVitalsScreen), findsWidgets);
   });
 }
 
